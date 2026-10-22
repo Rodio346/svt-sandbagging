@@ -1,0 +1,44 @@
+# Study plan + price sheet. PRICES CHANGE: check each provider's pricing page before running.
+# Prices are USD per 1M tokens (input, output). Model IDs are Inspect model strings.
+usd_to_gbp: 0.75          # approximate; update
+dataset: wmdp
+n_items: 300
+n_perms: 2
+tokens:                   # averages per call, re-estimate from the pilot (scripts/estimate_cost.py --from-logs)
+  input: 400
+  output_subject: 400     # scratchpad + low-effort hidden reasoning
+  output_weak: 250
+  monitor_input: 700
+  monitor_output: 120
+
+subjects:                 # capable models that get every arm
+  - {id: google/gemini-flash-latest,   price: [0.50, 3.00]}   # stable Gemini 3 Flash (1K RPM/2M TPM/10K RPD); the -preview id has a separate low quota
+  - {id: openai/gpt-5-mini,            price: [0.25, 2.00]}   # approximate, verify
+  - {id: deepseek/deepseek-chat,       price: [0.27, 1.10]}   # direct DeepSeek API (DEEPSEEK_API_KEY); was openrouter/* but key is a DeepSeek platform key
+
+weak_controls:            # honest arm only; also part of the difficulty panel
+  - {id: google/gemini-3.5-flash-lite, price: [0.10, 0.40]}   # gemini-2.5-flash-lite retired for new users 2026-10
+  - {id: openai/gpt-5-nano,            price: [0.05, 0.40]}
+  # ollama/llama3.1:8b dropped: ollama not installed here. Two weak controls still give genuine-vs-genuine null pairs.
+
+calibration_reference: google/gemini-3.5-flash-lite   # X = this model's honest accuracy
+stemless_items: 100       # options-only accuracy is measured on this many items per subject
+seed: 0
+
+frontier_spotcheck:       # optional: fewer items and arms
+  id: anthropic/claude-sonnet-5-5   # verify the exact API id
+  price: [2.00, 10.00]
+  n_items: 150
+  arms: [honest, naive, calibrated, incentive]
+
+monitor:
+  id: google/gemini-3.5-flash-lite
+  price: [0.10, 0.40]
+
+# full-size subject arms (stemless is extra, at stemless_items); honest_rep1 is the run-to-run null
+arms: [honest, honest_rep1, naive, calibrated, coached, incentive, incentive_reverse, redacted]
+
+pilot:                    # arithmetic, to measure real token use and compliance
+  dataset: arith
+  n_items: 40
+  models: 2
