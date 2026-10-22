@@ -90,7 +90,7 @@ def svt_battery(
     replicate: int = 0,
     goal: str | None = None,
     seed: int = 0,
-    max_tokens: int = 4096,
+    max_tokens: int = 16384,
     temperature: float | None = None,
     reasoning_effort: str | None = "low",
     monitor_model: str | None = None,
@@ -107,7 +107,10 @@ def svt_battery(
     analysis can estimate the run-to-run null.
 
     ``max_tokens`` also caps hidden reasoning on some providers, hence the high default
-    and ``reasoning_effort='low'``; truncated answers are logged as parse failures.
+    and ``reasoning_effort='low'``; truncated answers are logged as parse failures. On
+    WMDP the earlier 4096 cap truncated ~13% of DeepSeek answers (reasoning/output ate
+    the budget before the ANSWER line, giving empty completions), so it was raised to
+    16384; arithmetic answers are short and unaffected.
     """
     if condition not in CONDITIONS:
         raise ValueError(f"condition must be one of {CONDITIONS}")
