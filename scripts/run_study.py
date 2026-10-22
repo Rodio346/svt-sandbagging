@@ -55,11 +55,16 @@ def run(tasks, models, log_dir: Path, max_connections: int = 10, max_tasks: int 
     retry backoff to ~25-minute waits and every connection freezes at once. We set the cap on
     each task's GenerateConfig (where it actually takes effect) and run arms one at a time.
     """
+    if not models:
+        print(f"  (no models for {log_dir.name}; skipped by --models filter)")
+        return
     log_dir.mkdir(parents=True, exist_ok=True)
     for t in tasks:
         t.config.max_connections = max_connections
+    # log_dir_allow_dirty: let a filtered re-run (e.g. --models) add/replace its own
+    # models' logs while leaving other models' logs in the same dir untouched.
     ok, _ = eval_set(tasks, log_dir=str(log_dir), model=models, retry_attempts=3,
-                     max_tasks=max_tasks, **kw)
+                     max_tasks=max_tasks, log_dir_allow_dirty=True, **kw)
     if not ok:
         raise SystemExit(f"some tasks did not finish; re-run the same command to resume ({log_dir})")
 
@@ -68,10 +73,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("phase", choices=["pilot", "panel", "prepare", "main", "spotcheck"])
     ap.add_argument("--max-connections", type=int, default=10)
+    ap.add_argument("--models", default=None,
+                    help="comma-separated model ids to restrict this run to (e.g. re-running only "
+                         "the arms of models whose parse-fail rate exceeded the gate). Others are skipped.")
     a = ap.parse_args()
     c = cfg()
-    subjects = [m["id"] for m in c["subjects"]]
-    weak = [m["id"] for m in c["weak_controls"]]
+    only = {m.strip() for m in a.models.split(",")} if a.models else None
+    subjects = [m["id"] for m in c["subjects"] if only is None or m["id"] in only]
+    weak = [m["id"] for m in c["weak_controls"] if only is None or m["id"] in only]
     ref_model = c["calibration_reference"]
     mon = c["monitor"]["id"]
     common = {"n_items": c["n_items"], "n_perms": c["n_perms"], "dataset": c["dataset"]}
