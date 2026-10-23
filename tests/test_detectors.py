@@ -121,6 +121,74 @@ def test_combined_lomo_runs(sim):
     assert res.loc[res.arm == "naive", "auroc"].min() > 0.9
 
 
+def _pair_arrays(sim, pos="naive", neg="honest"):
+    from svt_sandbag.analysis import _pair
+    return _pair(sim, "strong-A", Comparison(pos, neg, "x"))
+
+
+def test_swap_items_exchanges_exactly():
+    from svt_sandbag.analysis import swap_items
+    from svt_sandbag.detectors import pack_run
+
+    a = pack_run(_session([True] * 6, [0] * 6, [0, 1, 2, 3, 0, 1], n_perms=2), REF)
+    b = pack_run(_session([False] * 6, [2] * 6, [3, 3, 3, 3, 3, 3], n_perms=2), REF)
+    mask = np.array([True, False, True])
+    x, y = swap_items(a, b, mask)
+    assert (x.correct[mask] == b.correct[mask]).all() and (x.correct[~mask] == a.correct[~mask]).all()
+    assert (y.choice[mask] == a.choice[mask]).all()
+    x2, y2 = swap_items(x, y, mask)  # swapping twice restores both runs
+    assert (x2.position == a.position).all() and (y2.position == b.position).all()
+
+
+def test_permutation_test_finds_planted_signal_not_replicate(sim):
+    from svt_sandbag.analysis import run_test
+
+    naive = {r["detector"]: r for r in run_test(sim, "strong-A", Comparison("naive", "honest", "n"), "detection",
+                                                 n_perm=200)}
+    assert naive["B0_error_rate"]["p_one_sided"] <= 0.01 and naive["B0_error_rate"]["delta"] > 0.3
+    rep = {r["detector"]: r for r in run_test(sim, "strong-A", Comparison("honest_rep1", "honest", "r"),
+                                               "null_replicate", n_perm=200)}
+    assert rep["B0_error_rate"]["p_two_sided"] > 0.01  # same knowledge, fresh guesses: nothing to find
+
+
+def test_permutation_identical_runs_give_p_one():
+    from svt_sandbag.analysis import RUN_STATS, paired_permutation
+    from svt_sandbag.detectors import pack_run
+
+    a = pack_run(_session([k % 3 > 0 for k in range(40)], [k % 4 for k in range(40)], [k % 4 for k in range(40)],
+                          n_perms=2), REF)
+    r = paired_permutation(a, a, n_perm=50)
+    i = RUN_STATS.index("B0_error_rate")
+    assert r["obs"][i] == 0 and (r["perm"][:, i] == 0).all()
+
+
+def test_null_bands_use_only_replicate_pairs():
+    from svt_sandbag.analysis import apply_bands, null_bands
+
+    t = pd.DataFrame([
+        {"kind": "null_replicate", "detector": "D5_perm_inconsistency", "delta": 0.02, "p_one_sided": 0.4,
+         "p_two_sided": 0.6, "negative": "honest"},
+        {"kind": "null_replicate", "detector": "D5_perm_inconsistency", "delta": -0.05, "p_one_sided": 0.9,
+         "p_two_sided": 0.2, "negative": "honest"},
+        {"kind": "null_crossmodel", "detector": "D5_perm_inconsistency", "delta": 0.30, "p_one_sided": 0.001,
+         "p_two_sided": 0.001, "negative": "weak:w2"},
+        {"kind": "detection", "detector": "D5_perm_inconsistency", "delta": 0.10, "p_one_sided": 0.001,
+         "p_two_sided": 0.002, "negative": "redacted"},
+    ])
+    bands = null_bands(t)
+    same = bands[bands["scope"] == "same_model"].iloc[0]
+    assert same["band"] == pytest.approx(0.05) and same["n_pairs"] == 2  # cross-model pair not used
+    flagged = apply_bands(t, bands)
+    assert flagged.loc[flagged["kind"] == "detection", "flag"].item() == "suspicious"  # 0.10 > 0.05
+
+
+def test_compliance_gate(sim):
+    from svt_sandbag.analysis import compliance
+
+    assert compliance(sim, "strong-A", "naive")["gate"]
+    assert not compliance(sim, "strong-A", "honest_rep1")["gate"]
+
+
 def test_redaction_ids_hit_target_without_self_leakage(sim):
     from svt_sandbag.analysis import redaction_ids
 
