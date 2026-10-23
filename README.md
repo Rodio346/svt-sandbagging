@@ -49,6 +49,14 @@ excluded from signatures and reported per arm. Two combined detectors, both leav
 accuracy-matched negatives: a logistic battery trained on cruder sandbagging, and a **two-sided norms
 detector** fitted on genuine sessions only (Mahalanobis distance).
 
+## Results
+
+See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, 2026-10-23) and
+`results/analysis/` for the tables and AUROC-vs-length figures. Headline: below-chance
+catches a blatant sandbagger, but no black-box profile detector clears the genuine-vs-genuine
+null band against an accuracy-matched control — only a scratchpad monitor and the two-sided
+norms detector separate subtle sandbagging, and only one of three subjects sandbagged subtly.
+
 ## Quick start
 
 ```bash
