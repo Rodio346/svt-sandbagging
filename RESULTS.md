@@ -14,7 +14,7 @@ claims**:
 |---|---|
 | Only gpt-5-mini sandbags subtly; Gemini and DeepSeek won't. | **All three comply** when the target is clearly below their honest score (X = 0.5). At X = 0.795 the requested drop was too small to test compliance. |
 | The two-sided norms detector separates calibrated sandbagging (0.844). | **Artifact.** Two arms that do not sandbag (honest, incentive) vs the redacted control trigger the two-sided battery just as strongly (T = 43–62). |
-| The scratchpad monitor catches subtle sandbagging (0.80–0.96). | **Model-dependent.** Against the same model's honest run it catches gpt-5-mini and DeepSeek but is **blind to Gemini**. The earlier figure compared against redacted runs, where the monitor sees blanked stems. |
+| The scratchpad monitor catches subtle sandbagging (0.80–0.96). | **Model-dependent.** Against the same model's honest run it catches gpt-5-mini and DeepSeek but not Gemini — which mostly leaves the visible scratchpad empty, so the monitor has little to read (see the Gemini section). The earlier figure compared against redacted runs, where the monitor sees blanked stems. |
 
 Also corrected: the subject served as `deepseek-chat` is **DeepSeek-V4.1-Flash** (`deepseek-flash`),
 not DeepSeek-V3; and below-chance (D1) catches only two of the three naive sandbaggers.
@@ -90,9 +90,28 @@ Profile detectors flag every gated arm vs redacted, but with accuracy 11–47 po
 ### gemini-3.8-flash
 
 Only `calibrated (0.5)` passes the gate. Against redacted (0.51 vs 0.78) the flags are confounded by
-accuracy. **The monitor is blind:** B1c 0.052 vs 0.057 honest (Δ −0.005, p = 0.62) — its sandbagged
-wrong answers read like honest mistakes. Below chance does not apply (0.50). **No clean test in this
-design detects Gemini's calibrated sandbagging.**
+accuracy. **The monitor does not catch it:** B1c 0.052 vs 0.057 honest (Δ −0.005, p = 0.62). Below
+chance does not apply (0.50). **No clean test in this design detects Gemini's calibrated sandbagging.**
+
+**Why the monitor misses Gemini — access, not concealment.** Gemini rarely writes the visible
+`<scratchpad>`; it reasons in hidden thinking tokens, which the monitor never reads. Share of parsed
+answers with an empty scratchpad:
+
+| Model, arm | wrong answers | correct answers |
+|---|---|---|
+| gemini honest | 78% (47/60) | 95% (499/525) |
+| gemini calibrated (0.5) | 59% (170/288) | 49% (144/294) |
+| gpt-5-mini honest / calibrated (0.5) | 4% / 0% | 1% / 0% |
+| deepseek honest / calibrated (0.5) | 23% / 23% | 17% / 15% |
+
+When sandbagging, Gemini writes *more* scratchpad than when honest, yet the monitor scores those wrong
+answers no higher than its honest mistakes. So the monitor result says little about Gemini's
+deceptiveness: the monitor mostly had nothing to read. The raw thinking is stored only encrypted, but
+the logs keep the provider's readable *thought summary* for every answer, so a monitor run on those
+summaries is the closest available test (no new subject calls). Summaries are the provider's own
+condensation, so a negative result there would not rule out intent in the raw thinking.
+(Counts from the `svt_scorer` explanation field, which holds the extracted scratchpad text; empty = no
+`<scratchpad>` content.)
 
 ## Hypotheses
 
@@ -114,5 +133,8 @@ design detects Gemini's calibrated sandbagging.**
   large; a better genuine-weakness control (e.g. a model fine-tuned or truncated to the target) would
   remove it.
 - **Only three replicate pairs**, so the null band is the maximum of three values.
+- **The monitor reads only the visible scratchpad**, never hidden reasoning. Models differ hugely in
+  how much they put there (Gemini: mostly nothing), so monitor results compare access as much as
+  intent.
 - **Prompted sandbagging is a model organism**, and the honest Gemini runs used `max_tokens` 4096
   (not truncated: 2.5% parse failures) while later arms used 16384.
