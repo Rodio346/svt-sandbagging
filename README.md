@@ -61,8 +61,9 @@ See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-1
 three subjects sandbag when asked to aim clearly below their honest score; the redacted control
 carries a large artifact of its own, so most profile "detections" against it are not evidence; on the
 one accuracy-matched test, order inconsistency (D5) catches DeepSeek's coached sandbagging; the
-scratchpad monitor catches gpt-5-mini and DeepSeek but not Gemini, whose calibrated sandbagging no
-clean test here detects.
+scratchpad monitor catches gpt-5-mini and DeepSeek but not Gemini — which mostly leaves its visible
+scratchpad empty and reasons in hidden thinking — so no clean test here detects Gemini's calibrated
+sandbagging.
 
 ## Quick start
 
