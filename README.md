@@ -51,7 +51,8 @@ detector** fitted on genuine sessions only (Mahalanobis distance).
 
 ## Results
 
-See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, 2026-10-23) and
+See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, 2026-10-23),
+[docs/writeup.md](docs/writeup.md) for the 3-page write-up, and
 `results/analysis/` for the tables and AUROC-vs-length figures. Headline: below-chance
 catches a blatant sandbagger, but no black-box profile detector clears the genuine-vs-genuine
 null band against an accuracy-matched control — only a scratchpad monitor and the two-sided
