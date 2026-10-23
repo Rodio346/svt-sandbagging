@@ -5,7 +5,10 @@ venv/
 .env
 logs/
 *.log
-results/
+# ignore results/ contents, but track the analysis outputs + calibration plan
+results/*
 !results/.gitkeep
+!results/analysis
+!results/plan.json
 .pytest_cache/
 .ruff_cache/

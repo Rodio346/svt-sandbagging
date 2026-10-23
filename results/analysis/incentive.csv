@@ -1,0 +1,4 @@
+model,acc_incentive,acc_reverse,discordant_worse,discordant_better,p_one_sided
+deepseek/deepseek-chat,0.8616666666666667,0.8633333333333333,9,11,0.7482776641845703
+google/gemini-flash-latest,0.8733333333333333,0.875,5,6,0.7255859375
+openai/gpt-5-mini,0.7633333333333333,0.7566666666666667,9,15,0.9242051839828491
