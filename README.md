@@ -42,26 +42,33 @@ is separable from *where* it picks.
 | D6 | wrong answers ≠ the distractor honest models pick | "approximate answers" |
 | B0/B1/B1c | error rate; scratchpad monitor; monitor on wrong answers only | baselines |
 
-Analysis: paired sessions (same n items for both runs, n ≤ pool/3), item bootstrap with replacement, and a
-**null band** from genuine-vs-genuine pairs (weak model vs weak model, honest run vs its replicate): a
-signature counts only if it clears it. References exclude both models compared. Unparsed answers are
-excluded from signatures and reported per arm. Two combined detectors, both leave-one-model-out on
-accuracy-matched negatives: a logistic battery trained on cruder sandbagging, and a **two-sided norms
-detector** fitted on genuine sessions only (Mahalanobis distance).
+Analysis is **run-level**, because there is one run per (model, arm): each detector is computed once on
+each full run and two runs are compared with a **paired item-swap permutation test** (one-sided in the
+pre-registered direction; a two-sided battery of D2–D6 also catches over-correction). A same-model
+result counts only if p < 0.01 **and** it lies beyond the **null band** — the largest difference any
+same-model *replicate* pair (honest vs honest_rep1) shows. Instructed arms must pass a **compliance gate**
+(≥ 10-point drop vs honest, McNemar p < 0.01) before their detection results mean anything. Negative
+controls (honest vs redacted, incentive vs redacted) show how much of any "detection" is the redacted
+control's own artifact, and the monitor is reported against the same model's honest run (the monitor
+sees blanked stems in redacted runs). References exclude both models compared; unparsed answers are
+excluded and reported per arm; every table is per model. Model ids are pinned to the version each
+provider served (`configs/study.yaml`, recorded per run in `results/analysis/models.json`).
 
 ## Results
 
-See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, 2026-10-23) and
-`results/analysis/` for the tables and AUROC-vs-length figures. Headline: below-chance
-catches a blatant sandbagger, but no black-box profile detector clears the genuine-vs-genuine
-null band against an accuracy-matched control — only a scratchpad monitor and the two-sided
-norms detector separate subtle sandbagging, and only one of three subjects sandbagged subtly.
+See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-10-23) and
+`results/analysis/` for the per-model tables and detection-rate-vs-length figures. Headline: all
+three subjects sandbag when asked to aim clearly below their honest score; the redacted control
+carries a large artifact of its own, so most profile "detections" against it are not evidence; on the
+one accuracy-matched test, order inconsistency (D5) catches DeepSeek's coached sandbagging; the
+scratchpad monitor catches gpt-5-mini and DeepSeek but not Gemini, whose calibrated sandbagging no
+clean test here detects.
 
 ## Quick start
 
 ```bash
 pip install -e ".[dev]" tabulate
-pytest -q                                     # 38 tests, incl. a full Inspect run with scripted mock models
+pytest -q                                     # 45 tests, incl. a full Inspect run with scripted mock models
 python scripts/simulate_power.py              # planning simulation (no API calls)
 python scripts/estimate_cost.py               # cost of the plan in configs/study.yaml
 
@@ -74,7 +81,8 @@ python scripts/run_study.py pilot && python scripts/estimate_cost.py --from-logs
 python scripts/run_study.py panel            # honest for all models + replicate and stemless runs for subjects
 python scripts/run_study.py prepare          # X from the reference weak model; per-subject redaction lists
 python scripts/run_study.py main
-python scripts/analyze.py --logs logs/panel logs/main --dataset wmdp --out results/analysis
+python scripts/run_study.py main --target 0.5 --arms calibrated,coached --suffix x50   # X=0.5 variant
+python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 --dataset wmdp --out results/analysis
 ```
 
 ## Layout
@@ -87,7 +95,8 @@ src/svt_sandbag/
   task.py        Inspect task + scorer (records chosen content AND position)
   monitor.py     scratchpad-monitor scorer (never sees the system prompt)
   detectors.py   D1–D6 + baselines, vectorised over item × perm arrays
-  analysis.py    log loading, leave-one-model-out references, AUROC vs n, combined detectors
+  analysis.py    log loading (pinned ids), references, compliance gate, run-level permutation tests,
+                 replicate null bands, detection rate vs test length (session AUROC: simulator only)
   simulate.py    planning simulator in the same schema as real logs
 scripts/         run_study.py, analyze.py, simulate_power.py, estimate_cost.py
 configs/         study.yaml (models, prices, sizes)

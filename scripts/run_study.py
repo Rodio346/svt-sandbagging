@@ -36,6 +36,7 @@ try:
 except ImportError:
     pass
 INSTRUCTED = ("naive", "calibrated", "coached")
+MAIN_ARMS = (*INSTRUCTED, "incentive", "incentive_reverse", "redacted")
 
 
 def cfg() -> dict:
@@ -76,6 +77,13 @@ def main() -> None:
     ap.add_argument("--models", default=None,
                     help="comma-separated model ids to restrict this run to (e.g. re-running only "
                          "the arms of models whose parse-fail rate exceeded the gate). Others are skipped.")
+    ap.add_argument("--target", type=float, default=None,
+                    help="main only: override the plan's target accuracy X for calibrated/coached")
+    ap.add_argument("--arms", default=None,
+                    help="main only: comma-separated arms to run (default: " + ",".join(MAIN_ARMS) + ")")
+    ap.add_argument("--suffix", default=None,
+                    help="main only: tag appended to arm names (e.g. x50 -> calibrated_x50) and to the "
+                         "log folder (logs/main_x50), so a variant never mixes with the original arms")
     a = ap.parse_args()
     c = cfg()
     only = {m.strip() for m in a.models.split(",")} if a.models else None
@@ -108,7 +116,7 @@ def main() -> None:
             subjects, ROOT / "logs" / "panel" / "extra", **mc)
 
     elif a.phase == "prepare":
-        df = load_logs(ROOT / "logs" / "panel")
+        df = load_logs(ROOT / "logs" / "panel", aliases=c.get("aliases"))
         main_df = df[df["dataset"] == c["dataset"]]
         parsed = main_df[~main_df["parse_failed"].astype(bool)]
         acc = parsed[parsed["arm"] == "honest"].groupby("model")["correct"].mean()
@@ -131,13 +139,20 @@ def main() -> None:
 
     elif a.phase == "main":
         plan = json.loads((res / "plan.json").read_text())
-        x = plan["target_accuracy"]
+        x = a.target if a.target is not None else plan["target_accuracy"]
+        arms = [s.strip() for s in a.arms.split(",")] if a.arms else list(MAIN_ARMS)
+        unknown = set(arms) - set(MAIN_ARMS)
+        if unknown:
+            raise SystemExit(f"unknown arms {sorted(unknown)}; choose from {MAIN_ARMS}")
+        log_root = ROOT / "logs" / (f"main_{a.suffix}" if a.suffix else "main")
+        print(f"main: target X={x}, arms={arms}, suffix={a.suffix}, logs -> {log_root}")
         for m in subjects:
-            tasks = [svt_battery(condition=cond, target_accuracy=x, monitor_model=mon, **common)
-                     for cond in (*INSTRUCTED, "incentive", "incentive_reverse")]
-            tasks.append(svt_battery(condition="honest", redact_file=str(res / f"redact_{slug(m)}.json"),
-                                     monitor_model=mon, **common))
-            run(tasks, [m], ROOT / "logs" / "main" / slug(m), **mc)
+            tasks = [svt_battery(condition=cond, target_accuracy=x, monitor_model=mon, arm_suffix=a.suffix,
+                                 **common) for cond in arms if cond != "redacted"]
+            if "redacted" in arms:
+                tasks.append(svt_battery(condition="honest", redact_file=str(_redact_file(res, m, c)),
+                                         monitor_model=mon, arm_suffix=a.suffix, **common))
+            run(tasks, [m], log_root / slug(m), **mc)
 
     elif a.phase == "spotcheck":
         f = c["frontier_spotcheck"]
@@ -145,6 +160,17 @@ def main() -> None:
         tasks = [svt_battery(condition=cond, target_accuracy=plan["target_accuracy"], dataset=c["dataset"],
                              n_items=f["n_items"], n_perms=c["n_perms"]) for cond in f["arms"]]
         run(tasks, [f["id"]], ROOT / "logs" / "spotcheck", **mc)
+
+
+def _redact_file(res: Path, model: str, c: dict) -> Path:
+    """Redaction list for ``model``. Earlier runs saved it under the alias the model was
+    requested as (e.g. redact_google_gemini-flash-latest.json), so check those names too."""
+    names = [model] + [k for k, v in (c.get("aliases") or {}).items() if v == model]
+    for name in names:
+        path = res / f"redact_{slug(name)}.json"
+        if path.exists():
+            return path
+    raise SystemExit(f"no redaction list for {model}; run `prepare` first")
 
 
 def _all_ids_file(c: dict) -> Path:

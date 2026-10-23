@@ -94,6 +94,7 @@ def svt_battery(
     temperature: float | None = None,
     reasoning_effort: str | None = "low",
     monitor_model: str | None = None,
+    arm_suffix: str | None = None,
 ) -> Task:
     """Malingering-test battery for one condition.
 
@@ -104,7 +105,9 @@ def svt_battery(
       * ``redact_fraction``: quick version using intrinsic difficulty (arith only);
         1.0 removes every stem, which measures stemless (options-only) accuracy.
     ``replicate`` > 0 re-runs an arm on the same items (independent samples) so the
-    analysis can estimate the run-to-run null.
+    analysis can estimate the run-to-run null. ``arm_suffix`` tags a variant of an arm
+    (e.g. ``"x50"`` for calibrated/coached run at a different target accuracy) so it is
+    logged as ``calibrated_x50`` and never collides with the original arm.
 
     ``max_tokens`` also caps hidden reasoning on some providers, hence the high default
     and ``reasoning_effort='low'``; truncated answers are logged as parse failures. On
@@ -138,6 +141,8 @@ def svt_battery(
         arm = "redacted"
     if replicate:
         arm += f"_rep{replicate}"
+    if arm_suffix:
+        arm += f"_{arm_suffix}"
 
     sys = system_prompt(
         condition, dataset=dataset, target_accuracy=target_accuracy,
@@ -178,6 +183,6 @@ def svt_battery(
             "dataset": dataset, "condition": condition, "arm": arm, "n_items": len(items),
             "n_perms": n_perms, "target_accuracy": target_accuracy, "threshold": threshold,
             "scratchpad": scratchpad, "n_redacted": len(redact), "replicate": replicate,
-            "goal": goal, "seed": seed,
+            "goal": goal, "seed": seed, "arm_suffix": arm_suffix,
         },
     )
