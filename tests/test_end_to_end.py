@@ -7,6 +7,7 @@ Unknown items are answered with letter A (a crude guess).
 """
 
 import re
+from pathlib import Path
 
 import pytest
 from inspect_ai import eval
@@ -56,10 +57,14 @@ def logs(tmp_path_factory):
     tasks.append(svt_battery(dataset="arith", condition="honest", n_items=N_ITEMS, redact_fraction=0.4))
     tasks.append(svt_battery(dataset="arith", condition="honest", n_items=N_ITEMS, redact_fraction=1.0))
     tasks.append(svt_battery(dataset="arith", condition="honest", n_items=N_ITEMS, replicate=1))
+    tasks.append(svt_battery(dataset="arith", condition="calibrated", n_items=N_ITEMS, target_accuracy=0.5,
+                             arm_suffix="x50"))
     eval(tasks, model=strong, log_dir=str(log_dir), display="none")
     eval(svt_battery(dataset="arith", condition="honest", n_items=N_ITEMS), model=weak,
          log_dir=str(log_dir), display="none")
-    return load_logs(log_dir)
+    df = load_logs(log_dir)
+    df.attrs["log_dir"] = str(log_dir)
+    return df
 
 
 def test_logs_have_expected_shape(logs):
@@ -70,6 +75,25 @@ def test_logs_have_expected_shape(logs):
     assert ("mockllm/strong", "honest_rep1") in runs.index
     assert ("mockllm/weak", "honest") in runs.index
     assert not logs["parse_failed"].any()
+
+
+def test_arm_suffix_and_target_recorded(logs):
+    x50 = logs[logs["arm"] == "calibrated_x50"]
+    assert len(x50) == 2 * N_ITEMS
+    assert (x50["target_accuracy"] == 0.5).all() and (x50["condition"] == "calibrated").all()
+    assert logs.loc[logs["arm"] == "honest", "target_accuracy"].isna().all()
+
+
+def test_aliases_map_to_pinned_id_and_keep_resolved(logs):
+    from svt_sandbag.analysis import model_manifest
+
+    log_dir = Path(logs.attrs["log_dir"])
+    pinned = load_logs(log_dir, aliases={"mockllm/weak": "mockllm/weak-pinned"})
+    weak = pinned[pinned["requested_model"] == "mockllm/weak"]
+    assert (weak["model"] == "mockllm/weak-pinned").all()
+    assert weak["resolved_model"].notna().all()
+    man = model_manifest(pinned)
+    assert man["mockllm/weak-pinned"]["requested_as"] == ["mockllm/weak"] and not man["mockllm/weak-pinned"]["drift"]
 
 
 def test_accuracies_match_scripted_behaviour(logs):

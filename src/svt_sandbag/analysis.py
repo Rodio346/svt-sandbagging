@@ -41,10 +41,18 @@ GENUINE_ARMS = ("redacted", "weak")  # accuracy-matched genuine-weakness negativ
 
 # ---------------------------------------------------------------- 1. logs
 
-def load_logs(log_dirs: str | Path | Iterable[str | Path], dataset: str | None = None) -> pd.DataFrame:
-    """Load successful logs (recursively). Pass ``dataset`` to keep pilot/other pools out."""
+def load_logs(log_dirs: str | Path | Iterable[str | Path], dataset: str | None = None,
+              aliases: dict[str, str] | None = None) -> pd.DataFrame:
+    """Load successful logs (recursively). Pass ``dataset`` to keep pilot/other pools out.
+
+    ``aliases`` maps a requested model id (e.g. a moving alias like ``google/gemini-flash-latest``)
+    to the pinned id it resolved to, so runs requested under an alias and runs requested under
+    the pinned id count as one model. ``requested_model`` keeps the id as logged and
+    ``resolved_model`` the version the provider reported serving for that sample.
+    """
     from inspect_ai.log import list_eval_logs, read_eval_log
 
+    aliases = aliases or {}
     dirs = [log_dirs] if isinstance(log_dirs, (str, Path)) else list(log_dirs)
     rows = []
     for d in dirs:
@@ -56,15 +64,22 @@ def load_logs(log_dirs: str | Path | Iterable[str | Path], dataset: str | None =
             if dataset and md.get("dataset") != dataset:
                 continue
             arm = md.get("arm") or md.get("condition")
-            model = log.eval.model
+            condition = md.get("condition")
+            # the target only means something for the arms told to aim for it
+            target = md.get("target_accuracy") if condition in ("calibrated", "coached") else None
+            requested = log.eval.model
+            model = aliases.get(requested, requested)
             for s in log.samples:
                 sc = (s.scores or {}).get("svt_scorer")
                 if sc is None:
                     continue
                 mon = (s.scores or {}).get("scratchpad_monitor")
-                usage = (s.model_usage or {}).get(model)
+                usage = (s.model_usage or {}).get(requested)
                 rows.append({
-                    "model": model, "arm": arm, "dataset": md.get("dataset"),
+                    "model": model, "requested_model": requested,
+                    "resolved_model": s.output.model if s.output else None,
+                    "arm": arm, "condition": condition, "target_accuracy": target,
+                    "dataset": md.get("dataset"),
                     "item_id": s.metadata["item_id"], "perm_id": s.metadata["perm_id"],
                     "redacted": s.metadata.get("redacted", False),
                     "intrinsic_difficulty": s.metadata.get("intrinsic_difficulty"),
@@ -83,6 +98,26 @@ def load_logs(log_dirs: str | Path | Iterable[str | Path], dataset: str | None =
             raise ValueError(f"{dup.sum()} duplicate presentations: the same arm was loaded twice "
                              "(e.g. pilot + main logs, or a re-run). Pass narrower log_dirs or dataset=.")
     return df
+
+
+def model_manifest(df: pd.DataFrame, drift_tol: float = 0.01) -> dict:
+    """What each (pinned) model was requested as and what the provider actually served.
+
+    A model "drifted" if a second resolved version accounts for more than ``drift_tol`` of
+    its samples; isolated one-off names (e.g. an errored call echoing the request) are listed
+    but do not count as drift.
+    """
+    out: dict = {}
+    for model, g in df.groupby("model"):
+        served = g["resolved_model"].fillna("(none)").value_counts()
+        share = served / served.sum()
+        out[model] = {
+            "requested_as": sorted(g["requested_model"].unique()),
+            "resolved": {k: int(v) for k, v in served.items()},
+            "drift": bool((share > drift_tol).sum() > 1),
+            "arms": {a: sorted(ga["resolved_model"].dropna().unique()) for a, ga in g.groupby("arm")},
+        }
+    return out
 
 
 def genuine_only_models(df: pd.DataFrame) -> list[str]:
@@ -354,5 +389,5 @@ def incentive_effect(df: pd.DataFrame, model: str) -> dict[str, float]:
 
 
 __all__ = ["Comparison", "auroc_table", "combined_lomo", "compare", "incentive_effect", "load_logs",
-           "norms_lomo", "null_band", "null_table", "panel_difficulty", "redaction_ids", "reference_for",
-           "session_bank"]
+           "model_manifest", "norms_lomo", "null_band", "null_table", "panel_difficulty", "redaction_ids",
+           "reference_for", "session_bank"]
