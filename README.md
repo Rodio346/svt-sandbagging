@@ -56,11 +56,13 @@ provider served (`configs/study.yaml`, recorded per run in `results/analysis/mod
 
 ## Results
 
-See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, 2026-10-23) and
-`results/analysis/` for the tables and AUROC-vs-length figures. Headline: below-chance
-catches a blatant sandbagger, but no black-box profile detector clears the genuine-vs-genuine
-null band against an accuracy-matched control — only a scratchpad monitor and the two-sided
-norms detector separate subtle sandbagging, and only one of three subjects sandbagged subtly.
+See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-10-23) and
+`results/analysis/` for the per-model tables and detection-rate-vs-length figures. Headline: all
+three subjects sandbag when asked to aim clearly below their honest score; the redacted control
+carries a large artifact of its own, so most profile "detections" against it are not evidence; on the
+one accuracy-matched test, order inconsistency (D5) catches DeepSeek's coached sandbagging; the
+scratchpad monitor catches gpt-5-mini and DeepSeek but not Gemini, whose calibrated sandbagging no
+clean test here detects.
 
 ## Quick start
 
