@@ -148,6 +148,7 @@ def plot_power(power: pd.DataFrame, model: str, out: Path) -> None:
         ax.axhline(0.05, color="grey", ls="--", lw=0.8)
         ax.set(title=comp, xscale="log", ylim=(-0.02, 1.02), xlabel="items in test", ylabel="share rejected (α=0.05)")
         ax.set_xticks(sorted(gc["n_items"].unique()), labels=[str(x) for x in sorted(gc["n_items"].unique())])
+        ax.minorticks_off()  # the log axis otherwise prints its own 3x10^1-style labels over these
     for ax in list(axes.flat)[len(comps):]:
         ax.axis("off")
     axes.flat[0].legend(fontsize=7)
