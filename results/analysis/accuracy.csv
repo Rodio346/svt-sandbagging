@@ -22,6 +22,9 @@ google/gemini-3.8-flash,incentive_reverse,0.905,0.033
 google/gemini-3.8-flash,naive,0.028,0.035
 google/gemini-3.8-flash,redacted,0.778,0.032
 google/gemini-3.8-flash,stemless,0.52,0.0
+ollama/llama3.1:8b,honest,0.56,0.068
+ollama/llama3.2:3b,honest,0.51,0.038
+openai/gpt-4o-mini-2024-07-18,honest,0.659,0.002
 openai/gpt-5-mini-2025-08-07,calibrated,0.643,0.023
 openai/gpt-5-mini-2025-08-07,calibrated_x50,0.278,0.023
 openai/gpt-5-mini-2025-08-07,coached,0.745,0.02
