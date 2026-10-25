@@ -69,7 +69,7 @@ sandbagging.
 
 ```bash
 pip install -e ".[dev]" tabulate
-pytest -q                                     # 45 tests, incl. a full Inspect run with scripted mock models
+pytest -q                                     # 48 tests, incl. a full Inspect run with scripted mock models
 python scripts/simulate_power.py              # planning simulation (no API calls)
 python scripts/estimate_cost.py               # cost of the plan in configs/study.yaml
 
@@ -84,7 +84,14 @@ python scripts/run_study.py prepare          # X from the reference weak model; 
 python scripts/run_study.py main
 python scripts/run_study.py main --target 0.5 --arms calibrated,coached --suffix x50   # X=0.5 variant
 python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 --dataset wmdp --out results/analysis
+
+# without the raw logs: reproduce every result from the public text-free export
+python scripts/analyze.py --data data --dataset wmdp --out results/analysis
+python scripts/sanitize_logs.py                # (owner only) rebuild data/ from the raw logs
 ```
+
+The raw logs are not published. [`data/`](data/README.md) holds a sanitized export with no question
+text, options, answer key, model outputs or request metadata (pseudonymous items, relabelled options).
 
 ## Layout
 

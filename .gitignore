@@ -12,3 +12,6 @@ results/*
 !results/plan.json
 .pytest_cache/
 .ruff_cache/
+
+# secret salt for sanitize_logs.py option relabelling - never publish
+.sanitize_salt

@@ -43,6 +43,7 @@ from svt_sandbag.analysis import (
     genuine_only_models,
     incentive_effect,
     load_logs,
+    load_sanitized,
     model_manifest,
     null_bands,
     power_vs_n,
@@ -164,6 +165,9 @@ def main() -> None:
     ap.add_argument("--dataset", default=None, help="keep only logs of this dataset (e.g. wmdp)")
     ap.add_argument("--out", default="results/analysis")
     ap.add_argument("--sim", action="store_true", help="use simulated data instead of logs")
+    ap.add_argument("--data", default=None,
+                    help="use the public text-free export (e.g. data/) instead of raw logs; "
+                         "written by scripts/sanitize_logs.py, reproduces the same results")
     ap.add_argument("--config", default=str(ROOT / "configs" / "study.yaml"))
     ap.add_argument("--n-perm", type=int, default=2000)
     ap.add_argument("--no-power", action="store_true", help="skip the detection-rate-vs-length curves")
@@ -174,6 +178,8 @@ def main() -> None:
     cfg = yaml.safe_load(Path(a.config).read_text())
     if a.sim:
         df = simulate()
+    elif a.data:
+        df = load_sanitized(a.data, dataset=a.dataset, aliases=cfg.get("aliases"))
     else:
         logs = [d for d in a.logs if Path(d).exists()]
         df = load_logs(logs, dataset=a.dataset, aliases=cfg.get("aliases"))
