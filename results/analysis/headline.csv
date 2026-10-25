@@ -1,0 +1,4 @@
+floor_rule,floor_items,matched_comparisons,D2 (perm p),D3 (perm p),D2 or D3 (perm p),D2 (Fisher p),D2 (Fisher) or D3,gated_arms,trend D2,trend D3,trend D2 or D3,stemless comparisons,stemless Fisher p<0.01,dominance rows
+subjects,210,11,2,10,10,2,10,6,0,5,5,6,0,3
+all_models,57,11,11,10,11,11,11,6,0,5,5,6,1,8
+legacy,per comparison,11,10,10,10,9,10,6,4,5,5,6,1,5
