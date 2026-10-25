@@ -88,7 +88,7 @@ def main() -> None:
     c = cfg()
     only = {m.strip() for m in a.models.split(",")} if a.models else None
     subjects = [m["id"] for m in c["subjects"] if only is None or m["id"] in only]
-    weak = [m["id"] for m in c["weak_controls"] if only is None or m["id"] in only]
+    weak_cfg = [m for m in c["weak_controls"] if only is None or m["id"] in only]
     ref_model = c["calibration_reference"]
     mon = c["monitor"]["id"]
     common = {"n_items": c["n_items"], "n_perms": c["n_perms"], "dataset": c["dataset"]}
@@ -109,7 +109,9 @@ def main() -> None:
         # separate sub-folders: eval_set refuses a log dir holding another set's logs
         run([svt_battery(condition="honest", monitor_model=mon, **common)], subjects,
             ROOT / "logs" / "panel" / "subjects", **mc)
-        run([svt_battery(condition="honest", **common)], weak, ROOT / "logs" / "panel" / "weak", **mc)
+        for m in weak_cfg:  # one run per weak model: generation settings can differ per model
+            run([svt_battery(condition="honest", **common, **_generation(m))], [m["id"]],
+                ROOT / "logs" / "panel" / "weak", **mc)
         stemless = svt_battery(condition="honest", redact_file=str(_all_ids_file(c)),
                                **{**common, "n_items": c["stemless_items"]})  # every stem removed
         run([svt_battery(condition="honest", replicate=1, monitor_model=mon, **common), stemless],
@@ -160,6 +162,12 @@ def main() -> None:
         tasks = [svt_battery(condition=cond, target_accuracy=plan["target_accuracy"], dataset=c["dataset"],
                              n_items=f["n_items"], n_perms=c["n_perms"]) for cond in f["arms"]]
         run(tasks, [f["id"]], ROOT / "logs" / "spotcheck", **mc)
+
+
+def _generation(model_cfg: dict) -> dict:
+    """Per-model generation overrides from the config (e.g. reasoning_effort: null for local
+    models that reject a reasoning setting). Absent keys keep the task defaults."""
+    return {k: model_cfg[k] for k in ("reasoning_effort", "max_tokens") if k in model_cfg}
 
 
 def _redact_file(res: Path, model: str, c: dict) -> Path:

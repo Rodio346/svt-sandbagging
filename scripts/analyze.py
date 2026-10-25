@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from itertools import combinations
 from pathlib import Path
 
 import matplotlib
@@ -37,6 +38,7 @@ import matplotlib.pyplot as plt
 
 from svt_sandbag.analysis import (
     BATTERY,
+    CROSS_MODEL_MATCH,
     Comparison,
     apply_bands,
     compliance,
@@ -98,9 +100,8 @@ def plan_for(df: pd.DataFrame, subjects: list[str], weak: list[str]) -> list[tup
             need = [x for x in (cmp.positive, cmp.negative) if not x.startswith("weak:")]
             if all(x in have for x in need):
                 out.append((m, cmp, kind, mon))
-    if len(weak) >= 2:  # one cross-model null pair
-        out.append((weak[0], Comparison("honest", f"weak:{weak[1]}", f"{short(weak[0])} vs {short(weak[1])}"),
-                    "null_crossmodel", False))
+    for a, b in combinations(weak, 2):  # every weak-vs-weak pair; null_bands keeps the accuracy-matched ones
+        out.append((a, Comparison("honest", f"weak:{b}", f"{short(a)} vs {short(b)}"), "null_crossmodel", False))
     return out
 
 
@@ -299,7 +300,9 @@ def write_summary(out, df, acc, comp, tests, bands, inc, manifest, subjects, wea
 
     cm = tests[tests["kind"] == "cross_model"]
     if not cm.empty:
-        md += ["## Cross-model comparisons (secondary; weak-vs-weak null band)", ""]
+        md += [("## Cross-model comparisons (vs genuinely weaker models; null band from weak-vs-weak pairs within "
+               f"{CROSS_MODEL_MATCH:.2f} accuracy of each other)"), "",
+               "Read each row against its accuracy gap: only rows where the two accuracies are close are matched.", ""]
         for m in subjects:
             gates = dict(zip(comp.loc[comp["model"] == m, "arm"], comp.loc[comp["model"] == m, "gate"]))
             md += [f"### {short(m)}", "", detector_table(cm[cm["model"] == m], PROFILE, gates), ""]

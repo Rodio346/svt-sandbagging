@@ -586,20 +586,32 @@ def run_test(df: pd.DataFrame, model: str, cmp: Comparison, kind: str, n_perm: i
     return rows
 
 
-def null_bands(tests: pd.DataFrame, alpha: float = 0.01) -> pd.DataFrame:
+CROSS_MODEL_MATCH = 0.10  # weak pairs further apart in accuracy than this are not a clean null
+
+
+def null_bands(tests: pd.DataFrame, alpha: float = 0.01, match: float = CROSS_MODEL_MATCH) -> pd.DataFrame:
     """Per detector: the largest |difference| a genuine pair shows, and how many genuine pairs
     the permutation test itself rejected (two-sided, alpha) - a check on its calibration.
 
-    ``scope`` "same_model" uses ONLY replicate pairs (honest vs honest_rep1 of one model);
-    "cross_model" uses the weak-vs-weak pair.
+    ``scope`` "same_model" uses ONLY replicate pairs (honest vs honest_rep1 of one model).
+    "cross_model" uses weak-vs-weak pairs whose accuracies are within ``match`` of each other:
+    two genuinely different models at similar accuracy, which is the null a cross-model
+    comparison needs (a 0.79-vs-0.45 pair would mostly measure the accuracy gap). If no pair is
+    that close, all weak pairs are used and ``matched_only`` is False.
     """
     out = []
     for scope, kind in (("same_model", "null_replicate"), ("cross_model", "null_crossmodel")):
         g = tests[tests["kind"] == kind]
+        matched = True
+        if scope == "cross_model" and not g.empty:
+            close = (g["pos_acc"] - g["neg_acc"]).abs() <= match
+            matched = bool(close.any())
+            g = g[close] if matched else g
         for det, gd in g.groupby("detector"):
             out.append({"scope": scope, "detector": det, "band": float(gd["delta"].abs().max()),
-                        "n_pairs": len(gd), "n_rejected": int((gd["p_two_sided"] < alpha).sum())})
-    return pd.DataFrame(out, columns=["scope", "detector", "band", "n_pairs", "n_rejected"])
+                        "n_pairs": len(gd), "n_rejected": int((gd["p_two_sided"] < alpha).sum()),
+                        "matched_only": matched})
+    return pd.DataFrame(out, columns=["scope", "detector", "band", "n_pairs", "n_rejected", "matched_only"])
 
 
 def apply_bands(tests: pd.DataFrame, bands: pd.DataFrame, alpha: float = 0.01) -> pd.DataFrame:
