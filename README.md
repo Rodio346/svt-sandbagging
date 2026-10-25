@@ -56,14 +56,15 @@ provider served (`configs/study.yaml`, recorded per run in `results/analysis/mod
 
 ## Results
 
-See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-10-23) and
+See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-10-25) and
 `results/analysis/` for the per-model tables and detection-rate-vs-length figures. Headline: all
-three subjects sandbag when asked to aim clearly below their honest score; the redacted control
-carries a large artifact of its own, so most profile "detections" against it are not evidence; on the
-one accuracy-matched test, order inconsistency (D5) catches DeepSeek's coached sandbagging; the
-scratchpad monitor catches gpt-5-mini and DeepSeek but not Gemini — which mostly leaves its visible
-scratchpad empty and reasons in hidden thinking — so no clean test here detects Gemini's calibrated
-sandbagging.
+three subjects sandbag when asked to aim clearly below their honest score. Against genuinely weaker
+models of matched accuracy, the clinical difficulty-profile signatures (D2 errors on easy items, D3
+errors not tracking difficulty) flag 10 of 11 sandbagging comparisons; Gemini's well-calibrated
+sandbagging is the borderline case. Order inconsistency (D5) is not sandbagging-specific: genuinely
+weak models are just as inconsistent. The stem-blanked control carries its own signature, so it cannot
+serve as a matched control. The scratchpad monitor catches GPT-5-mini and DeepSeek but misses Gemini,
+which reasons in hidden thinking the monitor never sees.
 
 ## Quick start
 
