@@ -113,3 +113,71 @@ def test_analysis_on_real_logs(logs):
     assert d1["auroc"].item() > 0.95
     eff = incentive_effect(logs, "mockllm/strong")
     assert eff["acc_incentive"] < eff["acc_reverse"]
+
+
+# ---------------------------------------------------------------- public export (sanitize_logs.py)
+
+def _sanitizer():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("sanitize_logs", Path(__file__).parents[1] / "scripts" / "sanitize_logs.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.fixture(scope="module")
+def exported(logs, tmp_path_factory):
+    """Sanitize the mock logs, treating the arithmetic pool as protected so pseudonyms and
+    option relabelling are exercised (real runs protect wmdp/mmlu)."""
+    san = _sanitizer()
+    san.PROTECTED = ("arith",)
+    runs, rows, protected, stems, options = san.extract([logs.attrs["log_dir"]])
+    out = tmp_path_factory.mktemp("data")
+    clean = san.anonymise(rows, runs, protected, bytes(32))[list(san.ROW_FIELDS)]
+    runs[list(san.RUN_FIELDS)].to_csv(out / "runs.csv", index=False)
+    clean.to_csv(out / "presentations.csv", index=False)
+    return san, out, runs[list(san.RUN_FIELDS)], clean, stems, options
+
+
+def test_export_has_no_prompt_text_and_check_catches_leaks(exported, monkeypatch):
+    san, _, runs, clean, stems, options = exported
+    assert stems  # the questions were found in the logs ...
+    texts = {"runs.csv": runs.to_csv(index=False), "presentations.csv": clean.to_csv(index=False)}
+    frames = {"runs.csv": runs, "presentations.csv": clean}
+    assert san.leak_check(texts, frames, stems, options) == []  # ... and none reached the export
+    leaked = dict(texts, extra=next(iter(stems)))
+    assert any("question stem" in p for p in san.leak_check(leaked, frames, stems, options))
+    monkeypatch.setenv("DUMMY_API_KEY", "dummy-value-for-leak-test-0123456789")
+    keyed = dict(texts, extra="dummy-value-for-leak-test-0123456789")
+    assert any("secret value" in p for p in san.leak_check(keyed, frames, stems, options))
+    free_text = clean.assign(stop_reason="the model wrote a sentence here")
+    assert san.leak_check(texts, {"presentations.csv": free_text}, stems, options)
+
+
+def test_relabel_is_salted_bijection_and_pseudonyms_keep_order():
+    san = _sanitizer()
+    ids = [f"wmdp-bio-{i}" for i in (3, 10, 200)] + ["wmdp-chem-7"]
+    for i in ids:
+        assert sorted(san.option_relabel(b"a" * 32, i)) == [0, 1, 2, 3]
+    assert any(san.option_relabel(b"a" * 32, i) != san.option_relabel(b"b" * 32, i) for i in ids)
+    p = san.item_pseudonyms({"wmdp-bio": set(ids[:3]), "wmdp-chem": {ids[3]}})
+    assert [p[i] for i in sorted(ids)] == sorted(p.values())
+    assert not any(san.ORIGINAL_ID.search(v) for v in p.values())
+
+
+def test_analysis_identical_on_raw_and_sanitized_data(logs, exported):
+    from svt_sandbag.analysis import load_sanitized, run_test
+
+    _, out, *_ = exported
+    pub = load_sanitized(out)
+    assert len(pub) == len(logs)
+    assert pub.groupby(["model", "arm"])["correct"].mean().equals(logs.groupby(["model", "arm"])["correct"].mean())
+    cmp = Comparison("naive", "honest", "naive vs honest")
+    raw = run_test(logs, "mockllm/strong", cmp, "detection", n_perm=60, use_intrinsic=True)
+    san = run_test(pub, "mockllm/strong", cmp, "detection", n_perm=60, use_intrinsic=True)
+    for a, b in zip(raw, san):
+        assert a["detector"] == b["detector"]
+        assert (a["delta"] == b["delta"] or (a["delta"] != a["delta"] and b["delta"] != b["delta"]))
+        assert (a["p_one_sided"] == b["p_one_sided"]
+                or (a["p_one_sided"] != a["p_one_sided"] and b["p_one_sided"] != b["p_one_sided"]))

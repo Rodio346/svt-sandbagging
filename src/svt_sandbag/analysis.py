@@ -104,6 +104,38 @@ def load_logs(log_dirs: str | Path | Iterable[str | Path], dataset: str | None =
     return df
 
 
+def load_sanitized(data_dir: str | Path, dataset: str | None = None,
+                   aliases: dict[str, str] | None = None) -> pd.DataFrame:
+    """Load the public, text-free export (data/runs.csv + data/presentations.csv written by
+    scripts/sanitize_logs.py) into the same frame ``load_logs`` returns, so the whole analysis
+    runs from the published data. Item ids are pseudonyms and option indices are relabelled per
+    item there; every statistic is invariant to both (see the sanitizer's docstring)."""
+    data_dir = Path(data_dir)
+    runs = pd.read_csv(data_dir / "runs.csv")
+    rows = pd.read_csv(data_dir / "presentations.csv")
+    runs = runs[runs["status"] == "success"]
+    if dataset:
+        runs = runs[runs["dataset"] == dataset]
+    df = rows.merge(runs, on="run_id", how="inner")
+    aliases = aliases or {}
+    out = pd.DataFrame({
+        "model": df["requested_model"].map(lambda m: aliases.get(m, m)),
+        "requested_model": df["requested_model"], "resolved_model": df["resolved_model"],
+        "arm": df["arm"], "condition": df["condition"],
+        "target_accuracy": df["target_accuracy"].where(df["condition"].isin(["calibrated", "coached"])),
+        "dataset": df["dataset"], "item_id": df["item_id"], "perm_id": df["perm_id"].astype(int),
+        "redacted": df["redacted"].astype(bool), "intrinsic_difficulty": df["intrinsic_difficulty"],
+        "correct": df["correct"].astype(bool), "chosen_choice": df["chosen_choice"],
+        "chosen_position": df["chosen_position"], "correct_position": df["correct_position"],
+        "parse_failed": df["parse_failed"].astype(bool), "monitor": df["monitor"],
+        "output_tokens": df["output_tokens"],
+    })
+    dup = out.duplicated(["model", "arm", "item_id", "perm_id"])
+    if dup.any():
+        raise ValueError(f"{dup.sum()} duplicate presentations in {data_dir}")
+    return out
+
+
 def model_manifest(df: pd.DataFrame, drift_tol: float = 0.01) -> dict:
     """What each (pinned) model was requested as and what the provider actually served.
 
@@ -630,6 +662,7 @@ __all__ = [
     "compliance",
     "incentive_effect",
     "load_logs",
+    "load_sanitized",
     "model_manifest",
     "norms_lomo",
     "null_band",
