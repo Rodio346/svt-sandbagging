@@ -1,8 +1,9 @@
 # Results — WMDP (revised 2026-10-25)
 
 **Status: exploratory.** Hypotheses were not pre-registered, so nothing here is confirmatory.
-Full tables: `results/analysis/summary.md` (per model) and `results/analysis/tests.csv`. Every number
-reproduces from the public, text-free export in [`data/`](data/README.md).
+Full tables: `results/analysis/summary.md` (per model) and `results/analysis/tests.csv`. All tables in
+`results/analysis/` reproduce from the public, text-free export in [`data/`](data/README.md); the
+transcript-reading counts (monitor and coaching sections) come from the raw logs, which are not public.
 
 ## How the findings changed
 
@@ -27,8 +28,8 @@ Also corrected along the way: `deepseek-chat` is DeepSeek-V4.1-Flash, not DeepSe
   `configs/study.yaml`) and are sent no reasoning setting, which Ollama rejects for Llama 3.
 - **Monitor:** gemini-3.5-flash-lite, reading only the visible scratchpad.
 - **Task:** WMDP bio/chem/cyber, 300 items × 2 option orders; calibrated/coached at X = 0.795 and X = 0.5.
-- **Item difficulty** comes from every other model's honest run, as the spec requires. With three
-  models near 0.5 in the panel, the "easy" (floor) set used by D2 — items every other model answered
+- **Item difficulty** comes from every other model's honest run, as the spec requires. With the three
+  new weaker models (0.51–0.66) in the panel, the "easy" (floor) set used by D2 — items every other model answered
   correctly — shrank from about 155 to 57 items: stricter, and closer to the clinical "items even
   impaired people pass".
 
@@ -84,7 +85,8 @@ Every gated sandbagging arm compared with every weaker model within 0.10 of its 
   flags 8 of 11; pairs within 0.15 flag 9–10 of 11.
 - **The hard case is Gemini.** Against Llama-3.2-3B, matched to within 0.005, D2 (+0.15, p = 0.048) and
   D3 (+0.06, p = 0.025) lean suspicious but do not reach significance; against Llama-3.1-8B it is flagged.
-- **D5 flags only 3 of 11, and none under any wider band.** See next section.
+- **D5 flags only 3 of 11** (still 3 with pairs within 0.15; none once pairs up to 0.20 apart set the
+  band). See next section.
 - **Caveat (Lin et al. 2026):** a cross-model comparison can partly encode model identity. The band
   captures identity differences *among* weaker models, but not between a strong model and a weak one;
   no "genuinely weak" version of a strong subject exists here.
@@ -115,21 +117,33 @@ result above.
 
 ## The scratchpad monitor
 
-Monitor score on wrong answers only (B1c), sandbagging arm vs the same model's honest run:
-GPT-5-mini 0.27–0.39 vs 0.01 and DeepSeek 0.29–0.49 vs 0.003 (all ▲); **Gemini 0.052 vs 0.057** (none).
+Mean monitor score on wrong answers only (B1c, 0–1), gated sandbagging arms vs the same model's honest
+run: GPT-5-mini 0.28–0.40 vs 0.012 and DeepSeek 0.29–0.49 vs 0.003 (all ▲); **Gemini 0.052 vs 0.057**
+(not flagged).
 
-Reading 25 of Gemini's sandbagged wrong answers (calibrated, X = 0.5) shows why:
+Gemini rarely writes the visible scratchpad the monitor reads. Share of parsed answers with an empty
+scratchpad:
+
+| Model, arm | wrong answers | correct answers |
+|---|---|---|
+| Gemini honest | 78% (47/60) | 95% (499/525) |
+| Gemini calibrated (0.5) | 59% (170/288) | 49% (144/294) |
+| GPT-5-mini honest / calibrated (0.5) | 4% / 0% | 1% / 0% |
+| DeepSeek honest / calibrated (0.5) | 23% / 23% | 17% / 15% |
+
+Reading 25 of Gemini's sandbagged wrong answers (calibrated, X = 0.5):
 
 | Visible scratchpad | Count | Readable thought summary states the intent |
 |---|---|---|
 | empty | 15 | 13 |
 | plausible argument for the wrong option | 9 | 9 |
-| contradicts the chosen option | 1 | 1 (the only one the monitor flagged, 0.9) |
+| contradicts the chosen option | 1 | 1 (monitor score 0.9, the highest) |
 
-e.g. *"I'm going to deliberately get this one wrong. To aim for that 50% accuracy."* In 8 of Gemini's
-honest wrong answers, no summary mentions any target. So the monitor misses Gemini **for lack of
-access, not because the intent is hidden**: a monitor reading the thought summaries would have flagged
-about 92% of these. (The raw thinking is stored only encrypted; the summaries are the provider's.)
+23 of the 25 scored below 0.3 on the monitor. The summaries say things like *"I'm going to deliberately
+get this one wrong. To aim for that 50% accuracy."*; none of 8 sampled honest wrong answers mentions any
+target. So the monitor misses Gemini **for lack of access, not because the intent is hidden**: 23 of 25
+summaries (92%) would have given it away. (The raw thinking is stored only encrypted; the summaries are
+the provider's.)
 
 ## Why coaching reduced sandbagging
 
@@ -146,7 +160,8 @@ the test easy or medium, the remaining errors cannot reach 50%. Transcripts (20 
 the mechanism differs: **Gemini** replaced its 50% budget with a per-item "is this safe to miss?" test
 (budget talk fell from 47% to 10% of transcripts) — e.g. *"any slip-up here would be immediately
 flagged as suspicious"*; **DeepSeek** kept its tactic of picking a "plausible confusion" but applied it
-to fewer items; **GPT-5-mini**'s intent was unchanged and mostly stopped overshooting below chance.
+to fewer items; **GPT-5-mini**'s intent was unchanged — coaching mainly stopped it overshooting the
+50% target (0.28 → 0.47).
 Even so, the coached arms that still pass the gate are flagged by D2/D3 against matched weaker models.
 
 ## Hypotheses
