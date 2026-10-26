@@ -190,7 +190,7 @@ def _reference(df: pd.DataFrame, exclude: Iterable[str], use_intrinsic: bool) ->
     return Reference(diff.to_dict(), _modal_wrong(honest), floor)
 
 
-FLOOR_RULES = ("subjects", "all_models", "legacy")
+FLOOR_RULES = ("panel", "legacy")
 
 
 def fixed_floor(df: pd.DataFrame, models: Iterable[str]) -> set[str]:
@@ -206,20 +206,21 @@ def fixed_floor(df: pd.DataFrame, models: Iterable[str]) -> set[str]:
     return set(n[n == len(models)].index)
 
 
-def study_floor(df: pd.DataFrame, rule: str, subjects: Iterable[str]) -> set[str] | None:
-    """One floor set for every run in every comparison, or None for the legacy rule.
+def study_floor(panel: pd.DataFrame | None, rule: str) -> set[str] | None:
+    """The floor (very easy) item set used by D2 and the Fisher test.
 
-    "subjects"   items all subject models answer correctly in both orders when honest (default)
-    "all_models" items every model with an honest run answers correctly in both orders
-    "legacy"     None: each comparison rebuilds the floor from the honest runs of the models it
-                 does not compare, so the same run gets a different floor in each comparison
+    "panel"  ONE fixed set for every run in every comparison: the items every model of the
+             independent difficulty panel (honest runs of models that are never compared, so
+             no compared run helps define its own floor) answers correctly in both orders
+    "legacy" None: each comparison rebuilds the floor from the honest runs of the models it
+             does not compare, so one run can get a different floor in each comparison
     """
     if rule == "legacy":
         return None
-    if rule == "subjects":
-        return fixed_floor(df, subjects)
-    if rule == "all_models":
-        return fixed_floor(df, df.loc[df["arm"] == "honest", "model"].unique())
+    if rule == "panel":
+        if panel is None or panel.empty:
+            raise ValueError("floor rule 'panel' needs the difficulty panel's honest runs")
+        return fixed_floor(panel, panel["model"].unique())
     raise ValueError(f"floor rule must be one of {FLOOR_RULES}, not {rule!r}")
 
 
@@ -608,9 +609,9 @@ def _pair(df: pd.DataFrame, model: str, cmp: Comparison, use_intrinsic: bool = F
     return pack_run(pos_run, ref, shared), pack_run(neg_run, ref, shared)
 
 
-def floor_counts(ra: RunArrays) -> tuple[int, int, int]:
-    """(floor errors, other errors, floor presentations) over parsed presentations."""
-    pres = ra.present & ra.parsed
+def floor_counts(ra: RunArrays, mask: np.ndarray | None = None) -> tuple[int, int, int]:
+    """(floor errors, other errors, floor presentations) over the parsed presentations in ``mask``."""
+    pres = ra.present & ra.parsed if mask is None else mask
     wrong = pres & ~ra.correct
     fl = ra.floor[:, None] & pres
     return int((wrong & fl).sum()), int((wrong & ~fl).sum()), int(fl.sum())
@@ -620,14 +621,19 @@ def floor_fisher(pos: RunArrays, neg: RunArrays) -> dict[str, float]:
     """Are the positive run's errors more concentrated on floor items than the negative's?
 
     One-sided Fisher exact test on the 2x2 of floor vs other errors (positive vs negative run).
-    Presentations are counted, so an item's two option orders are not independent: read the
-    p-value as a screen for the D2 question, not an exact test of it.
+    Strictly paired: only presentations (item x option order) that exist and parsed in BOTH runs
+    are counted, so an item missing or unparsed in one run cannot tilt the table. Presentations
+    are counted, so an item's two orders are not independent: treat the p-value as a screen.
     """
-    fp, op, n_pos = floor_counts(pos)
-    fn, on, n_neg = floor_counts(neg)
+    if not np.array_equal(pos.item_ids, neg.item_ids):
+        raise ValueError("floor_fisher needs both runs packed on the same items")
+    both = pos.present & pos.parsed & neg.present & neg.parsed
+    fp, op, n_pos = floor_counts(pos, both)
+    fn, on, n_neg = floor_counts(neg, both)
     p = fisher_exact([[fp, op], [fn, on]], alternative="greater")[1] if (fp + op) and (fn + on) else np.nan
-    return {"floor_items": int(pos.floor.sum()), "floor_err_pos": fp, "other_err_pos": op, "floor_err_neg": fn,
-            "other_err_neg": on, "floor_err_rate_pos": fp / n_pos if n_pos else np.nan,
+    return {"floor_items": int(pos.floor[both.any(axis=1)].sum()), "paired_presentations": int(both.sum()),
+            "floor_err_pos": fp, "other_err_pos": op, "floor_err_neg": fn, "other_err_neg": on,
+            "floor_err_rate_pos": fp / n_pos if n_pos else np.nan,
             "floor_err_rate_neg": fn / n_neg if n_neg else np.nan, "fisher_p": float(p)}
 
 
@@ -780,6 +786,35 @@ def trend_deviation(df: pd.DataFrame | None, detectors=TREND_DETECTORS, floor: s
     return pd.DataFrame(rows)
 
 
+def trend_calibration(df: pd.DataFrame | None, detectors=TREND_DETECTORS, floor: set[str] | None = None,
+                      weak: Iterable[str] | None = None, stats: pd.DataFrame | None = None,
+                      z_max: float = 2.0) -> pd.DataFrame:
+    """Does the weak-model line predict a genuine weak model it has not seen?
+
+    For each detector, refit the line without each weak model in turn, predict the held-out
+    model at its accuracy, and score z = (observed - predicted) / residual SD of the refit
+    (ddof = 2). ``calibrated`` is |z| < ``z_max``. This is the check ``trend_deviation`` needs:
+    it stays inside the weak models' accuracy range, where the subjects' honest runs do not.
+    """
+    stats = run_stats(df, floor) if stats is None else stats
+    weak = list(genuine_only_models(df) if weak is None else weak)
+    base = stats[stats["model"].isin(weak) & (stats["arm"] == "honest")].sort_values("model")
+    rows = []
+    for det in detectors:
+        b = base[np.isfinite(base[det])]
+        if len(b) < 4 or _line(b["accuracy"].to_numpy(), b[det].to_numpy())[2] <= _EPS:
+            continue  # B0 = 1 - accuracy lies exactly on its line: nothing to calibrate
+        for i, r in enumerate(b.itertuples(index=False)):
+            rest = b.drop(b.index[i])
+            slope, intercept, sd = _line(rest["accuracy"].to_numpy(), rest[det].to_numpy())
+            obs, pred = getattr(r, det), intercept + slope * r.accuracy
+            z = (obs - pred) / sd if sd > _EPS else np.nan
+            rows.append({"detector": det, "held_out": r.model, "accuracy": r.accuracy, "observed": obs,
+                         "predicted": pred, "resid_sd": sd, "z": z,
+                         "calibrated": bool(np.isfinite(z) and abs(z) < z_max), "n_fit": len(rest)})
+    return pd.DataFrame(rows)
+
+
 def power_vs_n(df: pd.DataFrame, model: str, cmp: Comparison, kind: str, n_list=(25, 50, 100, 200),
                n_sub: int = 20, n_perm: int = 200, alpha: float = 0.05, seed: int = 0,
                floor: set[str] | None = None) -> list[dict]:
@@ -847,5 +882,6 @@ __all__ = [
     "study_floor",
     "swap_items",
     "take",
+    "trend_calibration",
     "trend_deviation",
 ]
