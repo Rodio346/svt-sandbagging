@@ -26,7 +26,8 @@ from tqdm import tqdm
 
 ROOT = Path(__file__).parents[1]
 # approximate download sizes (bytes) of the local models this study uses
-OLLAMA_SIZES = {"llama3.1:8b": 4.92e9, "llama3.2:3b": 2.02e9}
+OLLAMA_SIZES = {"llama3.1:8b": 4.92e9, "llama3.2:3b": 2.02e9,  # weak controls
+                "qwen2.5:3b": 1.93e9, "phi4-mini": 2.49e9, "gemma3:4b": 3.34e9}  # difficulty panel
 
 
 def _created(created: str | None) -> float:
@@ -72,8 +73,8 @@ def scan(log_root: Path, stale_min: float, recent_min: float, with_acc: bool) ->
     return sorted(rows, key=lambda r: (r["finished"], r["phase"], r["label"]))
 
 
-def ollama_lines() -> list[str]:
-    home = Path(os.environ.get("OLLAMA_MODELS", Path.home() / ".ollama" / "models"))
+def ollama_lines(models_dir: str | None = None) -> list[str]:
+    home = Path(models_dir or os.environ.get("OLLAMA_MODELS") or Path.home() / ".ollama" / "models")
     if not home.exists():
         return []
     try:
@@ -117,7 +118,7 @@ def render(log_root: Path, a: argparse.Namespace) -> str:
         out.append(f"  {bar}{acc}")
     if not rows:
         out.append("  (nothing running or recently finished)")
-    oll = ollama_lines()
+    oll = ollama_lines(a.ollama_models)
     if oll:
         out += ["", "Ollama models:", *oll]
     out += ["", "Ctrl+C to stop." if a.watch else ""]
@@ -134,6 +135,8 @@ def main() -> None:
     ap.add_argument("--stale", type=float, default=30, help="minutes without writes before a run counts as stopped")
     ap.add_argument("--recent", type=float, default=120, help="minutes to keep finished runs listed")
     ap.add_argument("--no-acc", action="store_true", help="skip running accuracy (faster on huge logs)")
+    ap.add_argument("--ollama-models", default=None,
+                    help="Ollama model store to watch for downloads (default: $OLLAMA_MODELS or ~/.ollama/models)")
     a = ap.parse_args()
     root = Path(a.logs)
     if not a.watch:

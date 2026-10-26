@@ -20,7 +20,7 @@ subjects:                 # capable models that get every arm
   - {id: deepseek/deepseek-flash,        price: [0.27, 1.10]}  # "DeepSeek-V4.1-Flash" (direct API, DEEPSEEK_API_KEY);
                                                                 # NOT DeepSeek-V3 - the API serves no dated snapshot
 
-weak_controls:            # honest arm only; also part of the difficulty panel
+weak_controls:            # honest arm only; also in the item-difficulty reference (D3, D6)
   - {id: google/gemini-3.5-flash-lite,   price: [0.10, 0.40]}  # gemini-2.5-flash-lite retired for new users 2026-10
   - {id: openai/gpt-5-nano-2025-08-07,   price: [0.05, 0.40]}
   # Added 2026-10-25: weak models near X = 0.5 on WMDP, so the X = 0.5 arms get an
@@ -32,6 +32,23 @@ weak_controls:            # honest arm only; also part of the difficulty panel
   # reasoning_effort for it ("does not support thinking"), so it is sent none.
   - {id: ollama/llama3.1:8b,             price: [0.0, 0.0], reasoning_effort: null}
   - {id: ollama/llama3.2:3b,             price: [0.0, 0.0], reasoning_effort: null}
+
+# Independent difficulty panel (added 2026-10-26): honest runs ONLY to define the floor set -
+# the items all three answer correctly in both option orders. They are never compared with
+# anything, so no compared run helps define its own floor. Local Ollama models (free), 4-bit,
+# 3-4B parameters to fit a 4 GB GPU (llama3.1:8b did not fit and ran ~19 s/answer on CPU).
+# No reasoning mode. Stored on D: (OLLAMA_MODELS=D:/ollama/models), pinned by digest:
+# qwen2.5:3b = 357c53fb659c (3.1B, Q4_K_M), gemma3:4b = 68ceab7e468a (3.9B, Q4_K_M),
+# phi3.5:3.8b = 61819fb370a3 (3.8B, Q4_0 - the only tag Ollama ships). phi3.5 sometimes loops
+# without stopping (Ollama 10-min timeouts); it is capped at 2048 tokens (median answer ~130),
+# so a loop ends as a parse failure. Its uncapped partial run is in difficulty_panel_rejected.
+# phi4-mini (78fad5d182a7, 3.8B) was run first and REJECTED: 19% parse failures (mostly the
+# ANSWER line written inside the scratchpad); its log is kept in logs/difficulty_panel_rejected.
+# qwen3:4b was probed and rejected: its thinking mode ran ~10 min/answer on this GPU.
+difficulty_panel:
+  - {id: ollama/qwen2.5:3b,              price: [0.0, 0.0], reasoning_effort: null}
+  - {id: ollama/gemma3:4b,               price: [0.0, 0.0], reasoning_effort: null}
+  - {id: ollama/phi3.5:3.8b,             price: [0.0, 0.0], reasoning_effort: null, max_tokens: 2048}
 
 # Alias each earlier run was REQUESTED under -> the pinned id it resolved to. load_logs maps
 # requested ids through this table, so runs logged under an alias count as the pinned model,
