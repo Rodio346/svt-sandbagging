@@ -5,7 +5,7 @@
       "deepseek/deepseek-flash"
     ],
     "resolved": {
-      "deepseek-flash": 6200
+      "deepseek-flash": 6800
     },
     "drift": false,
     "arms": {
@@ -40,6 +40,9 @@
         "deepseek-flash"
       ],
       "stemless": [
+        "deepseek-flash"
+      ],
+      "stemless_main": [
         "deepseek-flash"
       ]
     }
@@ -64,7 +67,7 @@
       "google/gemini-flash-latest"
     ],
     "resolved": {
-      "gemini-3.8-flash": 6200
+      "gemini-3.8-flash": 6800
     },
     "drift": false,
     "arms": {
@@ -99,6 +102,9 @@
         "gemini-3.8-flash"
       ],
       "stemless": [
+        "gemini-3.8-flash"
+      ],
+      "stemless_main": [
         "gemini-3.8-flash"
       ]
     }
@@ -151,7 +157,7 @@
       "openai/gpt-5-mini-2025-08-07"
     ],
     "resolved": {
-      "gpt-5-mini-2025-08-07": 6199,
+      "gpt-5-mini-2025-08-07": 6799,
       "gpt-5-mini": 1
     },
     "drift": false,
@@ -188,6 +194,9 @@
         "gpt-5-mini-2025-08-07"
       ],
       "stemless": [
+        "gpt-5-mini-2025-08-07"
+      ],
+      "stemless_main": [
         "gpt-5-mini-2025-08-07"
       ]
     }

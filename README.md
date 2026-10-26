@@ -84,11 +84,13 @@ python scripts/run_study.py panel            # honest for all models + replicate
 python scripts/run_study.py prepare          # X from the reference weak model; per-subject redaction lists
 python scripts/run_study.py main
 python scripts/run_study.py main --target 0.5 --arms calibrated,coached --suffix x50   # X=0.5 variant
-python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 --dataset wmdp --out results/analysis
+python scripts/run_study.py stemless_main      # stemless control on the main 300 items
+python scripts/run_study.py difficulty         # independent difficulty panel -> the fixed floor set
+python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 logs/difficulty_panel --dataset wmdp --out results/analysis
 
 # without the raw logs: reproduce every result from the public text-free export
 python scripts/analyze.py --data data --dataset wmdp --out results/analysis
-python scripts/analyze.py --data data --dataset wmdp --floor-rule legacy   # floor sensitivity (subjects | all_models | legacy)
+python scripts/analyze.py --data data --dataset wmdp --floor-rule legacy   # floor sensitivity (default: panel)
 python scripts/sanitize_logs.py                # (owner only) rebuild data/ from the raw logs
 python scripts/incentive_uptake.py             # (owner only) did the models notice the incentive note?
 ```
