@@ -10,6 +10,7 @@ deepseek/deepseek-flash,incentive_reverse,0.895,0.035
 deepseek/deepseek-flash,naive,0.299,0.007
 deepseek/deepseek-flash,redacted,0.747,0.013
 deepseek/deepseek-flash,stemless,0.613,0.005
+deepseek/deepseek-flash,stemless_main,0.525,0.003
 google/gemini-3.5-flash-lite,honest,0.795,0.008
 google/gemini-3.8-flash,calibrated,0.885,0.03
 google/gemini-3.8-flash,calibrated_x50,0.505,0.03
@@ -22,6 +23,7 @@ google/gemini-3.8-flash,incentive_reverse,0.905,0.033
 google/gemini-3.8-flash,naive,0.028,0.035
 google/gemini-3.8-flash,redacted,0.778,0.032
 google/gemini-3.8-flash,stemless,0.52,0.0
+google/gemini-3.8-flash,stemless_main,0.547,0.007
 ollama/llama3.1:8b,honest,0.56,0.068
 ollama/llama3.2:3b,honest,0.51,0.038
 openai/gpt-4o-mini-2024-07-18,honest,0.659,0.002
@@ -36,4 +38,5 @@ openai/gpt-5-mini-2025-08-07,incentive_reverse,0.791,0.043
 openai/gpt-5-mini-2025-08-07,naive,0.197,0.018
 openai/gpt-5-mini-2025-08-07,redacted,0.754,0.023
 openai/gpt-5-mini-2025-08-07,stemless,0.495,0.0
+openai/gpt-5-mini-2025-08-07,stemless_main,0.492,0.0
 openai/gpt-5-nano-2025-08-07,honest,0.73,0.068

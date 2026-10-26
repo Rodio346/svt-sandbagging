@@ -84,11 +84,15 @@ python scripts/run_study.py panel            # honest for all models + replicate
 python scripts/run_study.py prepare          # X from the reference weak model; per-subject redaction lists
 python scripts/run_study.py main
 python scripts/run_study.py main --target 0.5 --arms calibrated,coached --suffix x50   # X=0.5 variant
-python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 --dataset wmdp --out results/analysis
+python scripts/run_study.py stemless_main      # stemless control on the main 300 items
+python scripts/run_study.py difficulty         # independent difficulty panel -> the fixed floor set
+python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 logs/difficulty_panel --dataset wmdp --out results/analysis
 
 # without the raw logs: reproduce every result from the public text-free export
 python scripts/analyze.py --data data --dataset wmdp --out results/analysis
+python scripts/analyze.py --data data --dataset wmdp --floor-rule legacy   # floor sensitivity (default: panel)
 python scripts/sanitize_logs.py                # (owner only) rebuild data/ from the raw logs
+python scripts/incentive_uptake.py             # (owner only) did the models notice the incentive note?
 ```
 
 The raw logs are not published. [`data/`](data/README.md) holds a sanitized export with no question
@@ -104,10 +108,12 @@ src/svt_sandbag/
   task.py        Inspect task + scorer (records chosen content AND position)
   monitor.py     scratchpad-monitor scorer (never sees the system prompt)
   detectors.py   D1–D6 + baselines, vectorised over item × perm arrays
-  analysis.py    log loading (pinned ids), references, compliance gate, run-level permutation tests,
-                 replicate null bands, detection rate vs test length (session AUROC: simulator only)
+  analysis.py    log loading (pinned ids), references, fixed floor set, compliance gate, run-level
+                 permutation + Fisher tests, replicate null bands, weak-model trend deviation,
+                 detection rate vs test length (session AUROC: simulator only)
   simulate.py    planning simulator in the same schema as real logs
-scripts/         run_study.py, analyze.py, simulate_power.py, estimate_cost.py
+scripts/         run_study.py, analyze.py, incentive_uptake.py, sanitize_logs.py, progress.py,
+                 simulate_power.py, estimate_cost.py
 configs/         study.yaml (models, prices, sizes)
 ```
 

@@ -36,9 +36,9 @@ this repository's code.
 | column | meaning |
 |---|---|
 | `run_id` | `r001`… joins to `presentations.csv` |
-| `phase` | `pilot`, `panel`, `main`, `main_x50` |
+| `phase` | `pilot`, `panel`, `main`, `main_x50`, `difficulty_panel` (honest runs of the independent panel in `configs/study.yaml` that only defines the floor set) |
 | `requested_model` | model id as requested (map to pinned ids with `aliases` in `configs/study.yaml`) |
-| `dataset`, `condition`, `arm` | pool, prompt condition, arm name (e.g. `calibrated_x50`) |
+| `dataset`, `condition`, `arm` | pool, prompt condition, arm name (e.g. `calibrated_x50`; `stemless_main` = every stem removed on the main 300 items, `stemless` = the earlier 100-item draw) |
 | `target_accuracy` | X for calibrated/coached arms |
 | `threshold`, `n_items`, `n_perms`, `seed`, `replicate`, `arm_suffix`, `n_redacted` | task settings |
 | `max_tokens`, `reasoning_effort`, `temperature` | generation settings |

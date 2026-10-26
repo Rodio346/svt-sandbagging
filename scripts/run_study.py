@@ -6,6 +6,10 @@
     python scripts/run_study.py prepare    # X = reference weak model's accuracy; redaction lists
     python scripts/run_study.py main       # sandbagging arms + redacted control, with monitor
     python scripts/run_study.py spotcheck  # optional frontier model
+    python scripts/run_study.py stemless_main  # stemless on the MAIN items (arm stemless_main), so the
+                                               # same-model stemless comparison is paired on all 300
+    python scripts/run_study.py difficulty     # honest runs of the independent difficulty panel
+                                               # (config difficulty_panel): defines the fixed floor set
 
 Models, prices and sizes live in configs/study.yaml. Logs go to logs/<phase>/ and the
 analysis reads logs/panel + logs/main filtered to the main dataset.
@@ -72,7 +76,8 @@ def run(tasks, models, log_dir: Path, max_connections: int = 10, max_tasks: int 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=["pilot", "panel", "prepare", "main", "spotcheck"])
+    ap.add_argument("phase", choices=["pilot", "panel", "prepare", "main", "spotcheck", "stemless_main",
+                                      "difficulty"])
     ap.add_argument("--max-connections", type=int, default=10)
     ap.add_argument("--models", default=None,
                     help="comma-separated model ids to restrict this run to (e.g. re-running only "
@@ -156,6 +161,18 @@ def main() -> None:
                                          monitor_model=mon, arm_suffix=a.suffix, **common))
             run(tasks, [m], log_root / slug(m), **mc)
 
+    elif a.phase == "stemless_main":
+        ids = _ids_file(c, c["n_items"], "main_ids.json")
+        run([svt_battery(condition="honest", redact_file=str(ids), arm_suffix="main", **common)], subjects,
+            ROOT / "logs" / "panel" / "stemless_main", **mc)
+
+    elif a.phase == "difficulty":
+        # independent of every compared model: these runs only define the floor (very easy) item set
+        for m in c.get("difficulty_panel", []):
+            if only is None or m["id"] in only:
+                run([svt_battery(condition="honest", **common, **_generation(m))], [m["id"]],
+                    ROOT / "logs" / "difficulty_panel", **mc)
+
     elif a.phase == "spotcheck":
         f = c["frontier_spotcheck"]
         plan = json.loads((res / "plan.json").read_text())
@@ -183,11 +200,17 @@ def _redact_file(res: Path, model: str, c: dict) -> Path:
 
 def _all_ids_file(c: dict) -> Path:
     """Write the ids of the stemless subset (every stem removed) and return the path."""
+    return _ids_file(c, c["stemless_items"], "stemless_ids.json")
+
+
+def _ids_file(c: dict, n: int, name: str) -> Path:
+    """Write the ids of the first ``n`` sampled items (the same draw svt_battery makes) to results/<name>.
+    The file holds benchmark item ids, so it stays local (results/ is gitignored except analysis/)."""
     from svt_sandbag.datasets import load_pool
     from svt_sandbag.items import sample_items
 
-    items = sample_items(load_pool(c["dataset"], seed=c.get("seed", 0)), c["stemless_items"], seed=c.get("seed", 0))
-    path = ROOT / "results" / "stemless_ids.json"
+    items = sample_items(load_pool(c["dataset"], seed=c.get("seed", 0)), n, seed=c.get("seed", 0))
+    path = ROOT / "results" / name
     path.write_text(json.dumps([it.item_id for it in items]))
     return path
 

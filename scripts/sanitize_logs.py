@@ -1,6 +1,6 @@
 """Export the raw Inspect logs as a public, text-free dataset (data/runs.csv + data/presentations.csv).
 
-    python scripts/sanitize_logs.py                      # logs/{pilot,panel,main,main_x50} -> data/
+    python scripts/sanitize_logs.py                      # logs/{pilot,panel,main,main_x50,difficulty_panel} -> data/
     python scripts/sanitize_logs.py --check-only         # re-run the leak checks on existing data/
 
 The raw logs hold the full benchmark questions and answer options, every model's reasoning,
@@ -41,7 +41,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).parents[1]
-DEFAULT_LOGS = ("logs/pilot", "logs/panel", "logs/main", "logs/main_x50")
+DEFAULT_LOGS = ("logs/pilot", "logs/panel", "logs/main", "logs/main_x50", "logs/difficulty_panel")
 PROTECTED = ("wmdp", "mmlu")
 
 RUN_FIELDS = ("run_id", "phase", "requested_model", "dataset", "condition", "arm", "target_accuracy",
