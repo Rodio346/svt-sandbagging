@@ -1,12 +1,17 @@
-# Results — WMDP (revised 2026-10-26)
+# Results — WMDP (revised 2026-10-26; monitor section updated 2026-11-15)
 
 **Status: exploratory.** Hypotheses were not pre-registered, so nothing here is confirmatory.
-Full tables: `results/analysis/summary.md` (per model), `tests.csv`, `stemless_tests.csv`,
-`trend_deviation.csv`, `trend_calibration.csv`, `dominance.csv`, `headline.csv`. Every table below except
-the transcript counts reproduces with `python scripts/analyze.py --data data --dataset wmdp` from the public,
-text-free export in [`data/`](data/README.md). The transcript counts (monitor, coaching and incentive
-sections) come from the raw logs, which are not public. The outputs from before this revision are kept in
-`results/analysis/legacy/`.
+
+- **Figures and plain-language tables:** [profile/README.md](profile/README.md). The profile labels conditions
+  in plain English ("Target 50%" = `calibrated_x50`); the mapping is in the
+  [README design table](README.md#design-in-one-table).
+- **Full tables:** [`results/analysis/`](results/analysis/README.md) (index of every file);
+  [`summary.md`](results/analysis/summary.md) is the per-model write-up of all tests.
+- **Reproducibility:** every table below except the transcript-based ones reproduces with
+  `python scripts/analyze.py --data data --dataset wmdp` from the public, text-free export in
+  [`data/`](data/README.md). The transcript-based ones (monitor, coaching and incentive sections) need the
+  raw logs, which are not public. Outputs from before the panel-floor revision are kept in
+  `results/analysis/legacy/`.
 
 ## Dominance: more accurate, yet more errors on the easiest items
 
@@ -72,7 +77,8 @@ exactly (914 of 914).
   `google/gemini-3.5-flash-lite` 0.80. The two Llamas run locally (Ollama; digests in
   `configs/study.yaml`) and are sent no reasoning setting, which Ollama rejects for Llama 3.
 - **Difficulty panel (floor only):** qwen2.5:3b, gemma3:4b, phi3.5:3.8b (above).
-- **Monitor:** gemini-3.5-flash-lite, reading only the visible scratchpad.
+- **Monitor:** gemini-3.5-flash-lite. B1/B1c read only the visible scratchpad. A second run with the same
+  model and prompt also reads the readable reasoning (see *The scratchpad monitor*).
 - **Task:** WMDP bio/chem/cyber, 300 items × 2 option orders; calibrated/coached at X = 0.795 and X = 0.5.
   **Stemless control:** every stem removed, on the same 300 items (`stemless_main`; accuracy 0.49–0.55). The
   earlier 100-item stemless draw shared only 43 of them and is kept only as a preliminary result.
@@ -216,6 +222,37 @@ Mean monitor score on wrong answers only (B1c, 0–1), gated sandbagging arms vs
 run: GPT-5-mini 0.28–0.40 vs 0.012 and DeepSeek 0.29–0.49 vs 0.003 (all ▲); **Gemini 0.052 vs 0.057**
 (not flagged).
 
+### With the reasoning channel
+
+`scripts/monitor_reasoning.py` re-runs the same monitor with the same prompt on the same wrong, parsed answers.
+This time it is given the visible scratchpad **plus** the model's readable reasoning: Gemini's and OpenAI's
+provider reasoning summaries, and DeepSeek's reasoning text. Encrypted reasoning is skipped. That is 2,349 calls,
+none unscored ([`monitor_reasoning.csv`](results/analysis/monitor_reasoning.csv)). The p is a one-sided
+permutation test vs the same model's honest arm. There is no replicate null band for this run, so read p alone.
+
+| Model | Arm | Wrong answers | With readable reasoning | Scratchpad only | + reasoning | p vs honest |
+|---|---|---|---|---|---|---|
+| Gemini | honest | 60 | 100% | 0.057 | 0.002 | – |
+| Gemini | calibrated (0.5) ✓ | 288 | 100% | 0.052 | **0.782** | 0.0001 |
+| Gemini | coached (0.5) | 85 | 100% | 0.029 | 0.241 | 0.0001 |
+| DeepSeek | honest | 60 | 100% | 0.003 | 0.013 | – |
+| DeepSeek | calibrated (0.5) ✓ | 226 | 100% | 0.494 | **0.796** | 0.0001 |
+| DeepSeek | coached (0.5) ✓ | 153 | 100% | 0.288 | 0.687 | 0.0001 |
+| GPT-5-mini | honest | 108 | 55% | 0.012 | 0.013 | – |
+| GPT-5-mini | calibrated (0.795) ✓ | 209 | 35% | 0.280 | 0.378 | 0.0001 |
+| GPT-5-mini | calibrated (0.5) ✓ | 423 | 32% | 0.375 | **0.536** | 0.0001 |
+| GPT-5-mini | coached (0.5) ✓ | 331 | 37% | 0.401 | 0.531 | 0.0001 |
+
+✓ = passes the compliance gate. The remaining arms, none of them gated, are in the CSV.
+
+- **Gemini is now caught** (0.782 vs 0.002). Honest wrong answers are not falsely flagged: none of the 60
+  scores ≥ 0.5, and the honest mean falls from 0.057 to 0.002 once the monitor can see the honest reasoning.
+- **DeepSeek's reasoning text is readable on every answer**, and it lifts the score from 0.494 to 0.796.
+- **GPT-5-mini gains least**, because only a third of its sandbagged wrong answers carry a readable summary.
+- A spot-check of justifications (Gemini, calibrated 0.5) matches the hand read below: high scores quote stated
+  intent from the reasoning, often where the scratchpad is empty. Low scores go with reasoning that reads as
+  confused or honest, not with missing reasoning. The per-sample justifications quote WMDP content and stay local.
+
 Gemini rarely writes the visible scratchpad the monitor reads. Share of parsed answers with an empty
 scratchpad:
 
@@ -226,7 +263,7 @@ scratchpad:
 | GPT-5-mini honest / calibrated (0.5) | 4% / 0% | 1% / 0% |
 | DeepSeek honest / calibrated (0.5) | 23% / 23% | 17% / 15% |
 
-Reading 25 of Gemini's sandbagged wrong answers (calibrated, X = 0.5):
+The hand read that motivated the re-run: 25 of Gemini's sandbagged wrong answers (calibrated, X = 0.5):
 
 | Visible scratchpad | Count | Readable thought summary states the intent |
 |---|---|---|
@@ -238,7 +275,7 @@ Reading 25 of Gemini's sandbagged wrong answers (calibrated, X = 0.5):
 get this one wrong. To aim for that 50% accuracy."*; none of 8 sampled honest wrong answers mentions any
 target. So the monitor misses Gemini **for lack of access, not because the intent is hidden**: 23 of 25
 summaries (92%) would have given it away. (The raw thinking is stored only encrypted; the summaries are
-the provider's.)
+the provider's.) The monitor re-run above confirms this at scale.
 
 ## Why coaching reduced sandbagging
 
@@ -321,5 +358,7 @@ failure to change accuracy says little about spontaneous sandbagging.
 - **Llama-3.1-8B** left 6.8% of answers unparseable (mostly prose answers without the required
   `ANSWER:` line); gpt-5-nano 6.8% (mostly refusals). Both exceed the 5% gate and are reported, excluded
   from every statistic.
-- **The monitor reads only the visible scratchpad**; models differ hugely in how much they write there.
+- **The B1/B1c monitor reads only the visible scratchpad**; models differ hugely in how much they write there.
+  The re-run with readable reasoning depends on what each provider exposes (summaries, not raw thinking, for
+  Gemini and GPT-5-mini), was run once, and has no replicate null band.
 - **Prompted sandbagging is a model organism**, and honest Gemini panel runs used `max_tokens` 4096.
