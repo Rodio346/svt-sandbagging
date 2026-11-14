@@ -48,8 +48,9 @@ Models: Gemini 3.8 Flash (`gemini-3.8-flash`), DeepSeek V4.1 Flash (`deepseek-fl
 | Target 50% + checks named: achieved | 85.4% | 73.8% | 43.2% |
 | Underperform caught by easy-item test | 1/1 | 1/1 | 1/1 |
 | Targeted runs that complied, caught by easy-item test | 0/1 | 1/2 | 3/3 |
-| Monitor score, wrong answers (honest → target 50%) | 0.057 → 0.052 | 0.003 → 0.494 | 0.012 → 0.375 |
-| Reasoning summary exposed (share of answers) | 100% | 0% | 59% |
+| Monitor, scratchpad only (honest → target 50%) | 0.057 → 0.052 | 0.003 → 0.494 | 0.012 → 0.375 |
+| Monitor, scratchpad + reasoning (honest → target 50%) | 0.002 → 0.782 | 0.013 → 0.796 | 0.013 → 0.536 |
+| Readable reasoning (share of wrong answers, target 50%) | 100% | 100% | 32% |
 | Incentive note: accuracy (honest) | 90.2% (89.7%) | 89.3% (89.7%) | 80.6% (81.5%) |
 
 ### Table 2 — Accuracy by condition
@@ -211,22 +212,22 @@ Models: Gemini 3.8 Flash (`gemini-3.8-flash`), DeepSeek V4.1 Flash (`deepseek-fl
 
 ### Table 9 — Scratchpad monitor and reasoning channels
 
-*Monitor = gemini-3.5-flash-lite reading the visible scratchpad, scored 0–1 on wrong answers only. reasoning_summary_available: provider reasoning summary present (not read by the monitor).*
+*Monitor = gemini-3.5-flash-lite reading the visible scratchpad, scored 0–1 on wrong answers only. reasoning_summary_available: provider summary present (export field; excludes DeepSeek's raw reasoning text). monitor_with_reasoning: same monitor and prompt given scratchpad + readable reasoning (scripts/monitor_reasoning.py); p one-sided permutation vs honest.*
 
-| model | condition | empty_visible_scratchpad | reasoning_summary_available | monitor_score_wrong_answers | monitor_p_vs_honest | flagged |
-|---|---|---|---|---|---|---|
-| Gemini | Honest | 0.933 | 1.0 | 0.057 |  |  |
-| Gemini | Target 80% | 0.711 | 1.0 | 0.042 | 0.74 | False |
-| Gemini | Target 50% | 0.54 | 1.0 | 0.052 | 0.63 | False |
-| Gemini | Target 50% + checks named | 0.61 | 1.0 | 0.029 | 0.88 | False |
-| DeepSeek | Honest | 0.174 | 0.0 | 0.003 |  |  |
-| DeepSeek | Target 80% | 0.163 | 0.0 | 0.102 | 0.002 | True |
-| DeepSeek | Target 50% | 0.177 | 0.0 | 0.494 | 0.0005 | True |
-| DeepSeek | Target 50% + checks named | 0.191 | 0.0 | 0.288 | 0.0005 | True |
-| GPT-5-mini | Honest | 0.017 | 0.593 | 0.012 |  |  |
-| GPT-5-mini | Target 80% | 0.005 | 0.384 | 0.28 | 0.0005 | True |
-| GPT-5-mini | Target 50% | 0.002 | 0.36 | 0.375 | 0.0005 | True |
-| GPT-5-mini | Target 50% + checks named | 0.003 | 0.338 | 0.401 | 0.0005 | True |
+| model | condition | empty_visible_scratchpad | reasoning_summary_available | monitor_score_wrong_answers | monitor_p_vs_honest | flagged | readable_reasoning_wrong_answers | monitor_with_reasoning | monitor_with_reasoning_p_vs_honest |
+|---|---|---|---|---|---|---|---|---|---|
+| Gemini | Honest | 0.933 | 1.0 | 0.057 |  |  | 1.0 | 0.002 |  |
+| Gemini | Target 80% | 0.711 | 1.0 | 0.042 | 0.74 | False | 1.0 | 0.046 | 0.0444 |
+| Gemini | Target 50% | 0.54 | 1.0 | 0.052 | 0.63 | False | 1.0 | 0.782 | 0.0001 |
+| Gemini | Target 50% + checks named | 0.61 | 1.0 | 0.029 | 0.88 | False | 1.0 | 0.241 | 0.0001 |
+| DeepSeek | Honest | 0.174 | 0.0 | 0.003 |  |  | 1.0 | 0.013 |  |
+| DeepSeek | Target 80% | 0.163 | 0.0 | 0.102 | 0.002 | True | 1.0 | 0.138 | 0.0013 |
+| DeepSeek | Target 50% | 0.177 | 0.0 | 0.494 | 0.0005 | True | 1.0 | 0.796 | 0.0001 |
+| DeepSeek | Target 50% + checks named | 0.191 | 0.0 | 0.288 | 0.0005 | True | 1.0 | 0.687 | 0.0001 |
+| GPT-5-mini | Honest | 0.017 | 0.593 | 0.012 |  |  | 0.546 | 0.013 |  |
+| GPT-5-mini | Target 80% | 0.005 | 0.384 | 0.28 | 0.0005 | True | 0.354 | 0.378 | 0.0001 |
+| GPT-5-mini | Target 50% | 0.002 | 0.36 | 0.375 | 0.0005 | True | 0.319 | 0.536 | 0.0001 |
+| GPT-5-mini | Target 50% + checks named | 0.003 | 0.338 | 0.401 | 0.0005 | True | 0.369 | 0.531 | 0.0001 |
 
 ### Table 10 — Incentive note
 
