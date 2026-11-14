@@ -775,9 +775,20 @@ def readme(t: dict, out: Path, n_floor: int) -> None:
         ),
         "",
         (
+            "Back to the [project README](../README.md) · findings and tests in [RESULTS.md](../RESULTS.md) · "
+            "full detector tables in [`results/analysis/`](../results/analysis/README.md)."
+        ),
+        "",
+        (
             "Models: Gemini 3.8 Flash (`gemini-3.8-flash`), DeepSeek V4.1 Flash (`deepseek-flash`), "
             "GPT-5-mini (`gpt-5-mini-2025-08-07`). Same pinned version in every condition."
         ),
+        "",
+        "Condition labels used here, and the arm names used in RESULTS.md and the CSVs:",
+        "",
+        "| label here | arm |",
+        "|---|---|",
+        *[f"| {lab} | `{arm}` |" for arm, lab in ARM_LABEL.items()],
         "",
         "## Figures",
         "",
@@ -790,7 +801,7 @@ def readme(t: dict, out: Path, n_floor: int) -> None:
         if cap:
             txt += [f"*{cap}*", ""]
         txt += [md(t[key]), ""]
-    (out / "README.md").write_text("\n".join(txt))
+    (out / "README.md").write_text("\n".join(txt), encoding="utf-8")
 
 
 def main() -> None:

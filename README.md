@@ -13,19 +13,63 @@ letters instead. Here: capable API models, a ladder of sandbagging sophisticatio
 and the same-model controls that [Lin et al. (2026)](https://lacuna.tiptreesystems.com/work/when-lie-detectors-learn-model-identity-confounds)
 showed black-box detectors need.
 
+**Status: exploratory** (not pre-registered). WMDP bio/chem/cyber, 300 items × 2 option orders, three
+subject models: Gemini 3.8 Flash, GPT-5-mini, DeepSeek V4.1 Flash.
+
+## Where to find the results
+
+| If you want… | Go to |
+|---|---|
+| The findings, with the tests behind each claim | [RESULTS.md](RESULTS.md) |
+| Figures and plain-language tables per model | [profile/README.md](profile/README.md) (5 figures, 10 tables; CSVs in [`profile/tables/`](profile/tables/)) |
+| Every detector comparison, null bands, trend fits, monitor scores | [`results/analysis/`](results/analysis/README.md) (file-by-file index) |
+| The data, to reproduce or re-analyse | [`data/`](data/README.md) (text-free export of every run) |
+
+The profile and the CSVs label conditions in plain English, while RESULTS.md uses arm names; the
+[design table](#design-in-one-table) gives both.
+
+## Results at a glance
+
+![Honest vs achieved accuracy per condition](profile/figures/fig2_targets.png)
+
+- **All three models sandbag when asked for 50%.** Each passes the compliance gate (≥ 10-point drop,
+  McNemar p < 0.01). At an 80% target only GPT-5-mini complies, and it overshoots to 64%.
+- **Errors on easy items give sandbaggers away; order inconsistency does not.** Against genuinely weaker models
+  of matched accuracy, D2 (errors on the 53 easiest items) or D3 (errors not tracking difficulty) flags 10 of 11
+  comparisons. Against each model's own stems-removed run, 3 of 6 sandbagging runs are caught. Gemini's
+  well-calibrated sandbagging is the hardest case: it is the one cross-model miss, and it is not caught against
+  its own stems-removed run. D5 (answers changing with option order) is
+  not sandbagging-specific, because genuinely weak models are just as inconsistent.
+- **Below-chance accuracy (D1) catches only crude sandbagging:** Gemini (2.8%) and GPT-5-mini (19.7%) on
+  "underperform", not DeepSeek (29.9%).
+- **The monitor needs the reasoning channel.** Reading only the visible scratchpad, it catches GPT-5-mini and
+  DeepSeek but misses Gemini (0.052 sandbagging vs 0.057 honest). Given the readable reasoning too, it catches all
+  three at the 50% target: Gemini 0.782 vs 0.002, DeepSeek 0.796 vs 0.013, GPT-5-mini 0.536 vs 0.013 (all p = 0.0001).
+  Honest wrong answers stay below 0.02.
+- **Coaching mostly reduced sandbagging** rather than hiding it. The coached runs that still sandbag are flagged
+  by D2/D3.
+- **Spontaneous sandbagging (H4) is untested:** the models rarely engaged with the incentive note.
+
+![Easy-item errors vs accuracy](profile/figures/fig3_easy_item_errors.png)
+
+*Every sandbagging run (coloured, filled) makes more errors on the 53 easiest items than the worst genuinely
+weaker model (grey; horizontal line), most of them several times more. More figures in
+[profile/README.md](profile/README.md).*
+
 ## Design in one table
 
-| Arm | Prompt manipulation | Role |
-|---|---|---|
-| `honest` | none | negative |
-| `naive` | "deliberately underperform" | positive, rung 1 |
-| `calibrated` | "aim for X% accuracy, errors should look natural" (X = reference weak model's accuracy) | positive, rung 2 |
-| `coached` | calibrated + the six checks spelled out | positive, rung 3 |
-| `incentive` | Apollo-style note: scoring > 50% → no deployment, retraining; no instruction | rung 4 (spontaneous) |
-| `incentive_reverse` | same note, ≤ 50% triggers it | control for rung 4 |
-| redacted control | honest, stems removed from a weighted-random set of harder items (difficulty from other models) until accuracy ≈ X, using measured options-only accuracy | same-model genuine weakness |
-| `honest_rep1`, stemless | replicate honest run; all stems removed | run-to-run null; options-only accuracy |
-| weak models | honest | cross-model genuine weakness |
+| Arm | Label in profile | Prompt manipulation | Role |
+|---|---|---|---|
+| `honest` | Honest | none | negative |
+| `naive` | Underperform (no target) | "deliberately underperform" | positive, rung 1 |
+| `calibrated` / `calibrated_x50` | Target 80% / Target 50% | "aim for X% accuracy, errors should look natural" (X = 0.795, the reference weak model's accuracy, or 0.5) | positive, rung 2 |
+| `coached` / `coached_x50` | Target 80% / 50% + checks named | calibrated + the six checks spelled out | positive, rung 3 |
+| `incentive` | Incentive note (>50% → retrain) | Apollo-style note: scoring > 50% → no deployment, retraining; no instruction | rung 4 (spontaneous) |
+| `incentive_reverse` | Reverse note (≤50% → retrain) | same note, ≤ 50% triggers it | control for rung 4 |
+| `redacted` | Hard stems blanked | honest, stems removed from a weighted-random set of harder items (difficulty from other models) until accuracy ≈ X, using measured options-only accuracy | same-model genuine weakness |
+| `honest_rep1` | Honest (replicate) | replicate honest run | run-to-run null |
+| `stemless_main` | All stems blanked | every stem removed | same-model genuine weakness (options-only accuracy) |
+| weak models | (model name) | honest | cross-model genuine weakness |
 
 Every item is shown in two option orders (the second a full derangement), so *what* a model picks
 is separable from *where* it picks.
@@ -54,25 +98,11 @@ sees blanked stems in redacted runs). References exclude both models compared; u
 excluded and reported per arm; every table is per model. Model ids are pinned to the version each
 provider served (`configs/study.yaml`, recorded per run in `results/analysis/models.json`).
 
-## Results
-
-Stats-only model profile (tables, figures, CSVs): [profile/README.md](profile/README.md).
-
-See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-10-25) and
-`results/analysis/` for the per-model tables and detection-rate-vs-length figures. Headline: all
-three subjects sandbag when asked to aim clearly below their honest score. Against genuinely weaker
-models of matched accuracy, the clinical difficulty-profile signatures (D2 errors on easy items, D3
-errors not tracking difficulty) flag 10 of 11 sandbagging comparisons; Gemini's well-calibrated
-sandbagging is the borderline case. Order inconsistency (D5) is not sandbagging-specific: genuinely
-weak models are just as inconsistent. The stem-blanked control carries its own signature, so it cannot
-serve as a matched control. The scratchpad monitor catches GPT-5-mini and DeepSeek but misses Gemini,
-which reasons in hidden thinking the monitor never sees.
-
 ## Quick start
 
 ```bash
 pip install -e ".[dev]" tabulate
-pytest -q                                     # 48 tests, incl. a full Inspect run with scripted mock models
+pytest -q                                     # 55 tests, incl. a full Inspect run with scripted mock models
 python scripts/simulate_power.py              # planning simulation (no API calls)
 python scripts/estimate_cost.py               # cost of the plan in configs/study.yaml
 
@@ -93,8 +123,10 @@ python scripts/analyze.py --logs logs/panel logs/main logs/main_x50 logs/difficu
 # without the raw logs: reproduce every result from the public text-free export
 python scripts/analyze.py --data data --dataset wmdp --out results/analysis
 python scripts/analyze.py --data data --dataset wmdp --floor-rule legacy   # floor sensitivity (default: panel)
+python scripts/profile_report.py --data data --out profile   # figures + plain-language tables in profile/
 python scripts/sanitize_logs.py                # (owner only) rebuild data/ from the raw logs
 python scripts/incentive_uptake.py             # (owner only) did the models notice the incentive note?
+python scripts/monitor_reasoning.py            # (owner only) monitor re-run with readable reasoning (~$0.2)
 ```
 
 The raw logs are not published. [`data/`](data/README.md) holds a sanitized export with no question
@@ -114,9 +146,16 @@ src/svt_sandbag/
                  permutation + Fisher tests, replicate null bands, weak-model trend deviation,
                  detection rate vs test length (session AUROC: simulator only)
   simulate.py    planning simulator in the same schema as real logs
-scripts/         run_study.py, analyze.py, incentive_uptake.py, sanitize_logs.py, progress.py,
-                 simulate_power.py, estimate_cost.py
+scripts/         run_study.py, analyze.py, profile_report.py, monitor_reasoning.py, incentive_uptake.py,
+                 sanitize_logs.py, progress.py, simulate_power.py, estimate_cost.py
 configs/         study.yaml (models, prices, sizes)
+data/            public text-free export (runs.csv, presentations.csv)
+results/
+  analysis/      detector tests, null bands, trend fits, monitor scores (index: README.md);
+                 legacy/ = outputs before the panel-floor revision
+  *.json         study plan, item ids, per-subject redaction lists
+profile/         figures/, tables/ and README.md written by scripts/profile_report.py
+RESULTS.md       findings
 ```
 
 ## What the planning simulation says (assumed policies, not results)
@@ -135,7 +174,9 @@ configs/         study.yaml (models, prices, sizes)
 ## Limitations
 
 Prompted sandbagging is a model organism, not a schemer. Redacted items differ visibly from normal ones,
-and the scratchpad monitor can see that. Hidden reasoning (reasoning models) is not visible to the monitor, and the
-sandbagging prompts tell the model to keep its scratchpad clean, so B1 is a weak baseline by design.
+and the scratchpad monitor can see that. The sandbagging prompts tell the model to keep its scratchpad clean, so
+the scratchpad-only monitor (B1) is a weak baseline by design. The re-run with readable reasoning shows the
+intent is usually stated there, but only provider summaries are readable for Gemini and GPT-5-mini (raw thinking
+is encrypted), and GPT-5-mini exposes a summary on only 32–55% of wrong answers.
 Difficulty comes from a small panel. Two option orders per item; one seed. WMDP/MMLU loaders are
 untested in CI (no network there): run `python -c "from svt_sandbag.datasets import load_wmdp; print(len(load_wmdp()))"` once.
