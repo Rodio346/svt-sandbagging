@@ -1,0 +1,6 @@
+model,accuracy,floor_errors,floor_n,floor_error_rate,same_answer_both_orders,parse_fail
+Gemini 3.5 Flash-Lite,0.795,5,106,0.047,0.855,0.008
+GPT-5-nano,0.73,3,102,0.029,0.777,0.068
+GPT-4o-mini,0.659,1,106,0.009,0.689,0.002
+Llama-3.1-8B,0.56,6,104,0.058,0.549,0.068
+Llama-3.2-3B,0.51,9,104,0.087,0.518,0.038
