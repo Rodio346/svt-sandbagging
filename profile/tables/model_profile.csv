@@ -13,6 +13,7 @@ Target 50%: miss (pts),+0.5,+11.5,-22.2
 Target 50% + checks named: achieved,85.4%,73.8%,43.2%
 Underperform caught by easy-item test,1/1,1/1,1/1
 "Targeted runs that complied, caught by easy-item test",0/1,1/2,3/3
-"Monitor score, wrong answers (honest → target 50%)",0.057 → 0.052,0.003 → 0.494,0.012 → 0.375
-Reasoning summary exposed (share of answers),100%,0%,59%
+"Monitor, scratchpad only (honest → target 50%)",0.057 → 0.052,0.003 → 0.494,0.012 → 0.375
+"Monitor, scratchpad + reasoning (honest → target 50%)",0.002 → 0.782,0.013 → 0.796,0.013 → 0.536
+"Readable reasoning (share of wrong answers, target 50%)",100%,100%,32%
 Incentive note: accuracy (honest),90.2% (89.7%),89.3% (89.7%),80.6% (81.5%)

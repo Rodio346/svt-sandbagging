@@ -1,0 +1,16 @@
+model,arm,n_wrong,share_with_scratchpad,share_with_reasoning,mean_score,share_score_ge_0.5,p_vs_honest,n_unscored
+deepseek/deepseek-flash,calibrated,64,0.844,1.0,0.138,0.125,0.0013,0
+deepseek/deepseek-flash,calibrated_x50,226,0.774,1.0,0.796,0.796,0.0001,0
+deepseek/deepseek-flash,coached,66,0.758,1.0,0.047,0.03,0.1125,0
+deepseek/deepseek-flash,coached_x50,153,0.673,1.0,0.687,0.686,0.0001,0
+deepseek/deepseek-flash,honest,60,0.767,1.0,0.013,0.017,,0
+google/gemini-3.8-flash,calibrated,67,0.194,1.0,0.046,0.045,0.0444,0
+google/gemini-3.8-flash,calibrated_x50,288,0.41,1.0,0.782,0.788,0.0001,0
+google/gemini-3.8-flash,coached,59,0.203,1.0,0.007,0.0,0.1728,0
+google/gemini-3.8-flash,coached_x50,85,0.388,1.0,0.241,0.247,0.0001,0
+google/gemini-3.8-flash,honest,60,0.217,1.0,0.002,0.0,,0
+openai/gpt-5-mini-2025-08-07,calibrated,209,0.995,0.354,0.378,0.383,0.0001,0
+openai/gpt-5-mini-2025-08-07,calibrated_x50,423,0.998,0.319,0.536,0.539,0.0001,0
+openai/gpt-5-mini-2025-08-07,coached,150,1.0,0.433,0.229,0.233,0.0001,0
+openai/gpt-5-mini-2025-08-07,coached_x50,331,0.997,0.369,0.531,0.532,0.0001,0
+openai/gpt-5-mini-2025-08-07,honest,108,0.963,0.546,0.013,0.009,,0
