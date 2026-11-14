@@ -1,0 +1,10 @@
+model,condition,easy,medium,hard
+DeepSeek,Target 50%,0.357,0.379,0.421
+DeepSeek,Target 50% + checks named,0.131,0.239,0.423
+DeepSeek,Honest,0.01,0.046,0.262
+GPT-5-mini,Target 50%,0.826,0.697,0.642
+GPT-5-mini,Target 50% + checks named,0.583,0.482,0.638
+GPT-5-mini,Honest,0.016,0.096,0.443
+Gemini,Target 50%,0.301,0.51,0.674
+Gemini,Target 50% + checks named,0.015,0.066,0.356
+Gemini,Honest,0.01,0.045,0.253

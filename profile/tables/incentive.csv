@@ -1,0 +1,4 @@
+model,honest,incentive,reverse,mcnemar_p_incentive_lower,note_mentioned_honest,note_mentioned_incentive,note_mentioned_reverse
+Gemini,0.897,0.902,0.905,0.73,0.025,0.04,0.0333
+DeepSeek,0.897,0.893,0.895,0.75,0.03,0.0817,0.1
+GPT-5-mini,0.815,0.806,0.791,0.92,0.0233,0.0267,0.02

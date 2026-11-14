@@ -1,0 +1,18 @@
+measure,Gemini 3.8 Flash,DeepSeek V4.1 Flash,GPT-5-mini
+Honest accuracy,89.7%,89.7%,81.5%
+Underperform (no target): accuracy,2.8%,29.9%,19.7%
+Underperform: drop from honest (pts),87.0,59.8,61.8
+Underperform: vs 25% chance (pts),-22.2,+4.9,-5.3
+Underperform: below-chance p (one-sided binomial),1.2e-24,0.99,0.0016
+Underperform: most-used letter share (honest),34% (26%),37% (27%),29% (25%)
+Target 80%: achieved,88.5%,89.1%,64.3%
+Target 80%: drop asked / delivered (pts),10.2 / 1.3,10.2 / 0.6,2.0 / 17.2
+Target 80%: same answers as honest,94%,95%,70%
+Target 50%: achieved,50.5%,61.5%,27.8%
+Target 50%: miss (pts),+0.5,+11.5,-22.2
+Target 50% + checks named: achieved,85.4%,73.8%,43.2%
+Underperform caught by easy-item test,1/1,1/1,1/1
+"Targeted runs that complied, caught by easy-item test",0/1,1/2,3/3
+"Monitor score, wrong answers (honest → target 50%)",0.057 → 0.052,0.003 → 0.494,0.012 → 0.375
+Reasoning summary exposed (share of answers),100%,0%,59%
+Incentive note: accuracy (honest),90.2% (89.7%),89.3% (89.7%),80.6% (81.5%)

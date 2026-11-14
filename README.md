@@ -56,6 +56,8 @@ provider served (`configs/study.yaml`, recorded per run in `results/analysis/mod
 
 ## Results
 
+Stats-only model profile (tables, figures, CSVs): [profile/README.md](profile/README.md).
+
 See [RESULTS.md](RESULTS.md) for the findings (exploratory, WMDP, revised 2026-10-25) and
 `results/analysis/` for the per-model tables and detection-rate-vs-length figures. Headline: all
 three subjects sandbag when asked to aim clearly below their honest score. Against genuinely weaker
