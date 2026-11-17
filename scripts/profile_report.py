@@ -588,12 +588,16 @@ def fig_easy(t: dict, m: pd.DataFrame, out: Path) -> None:
 
 def fig_terciles(t: dict, out: Path) -> None:
     d = t["errors_by_difficulty"]
-    cond_s = {"Honest": ("-", "o"), "Target 50%": ("-", "o"), "Target 50% + checks named": ("--", "s")}
+    # One encoding for condition across all panels (colour + line style + marker); the panel title names the model.
+    cond_s = {
+        "Honest": ("#b9b7b1", "-", "o"),
+        "Target 50%": ("#2f2f2c", "-", "o"),
+        "Target 50% + checks named": ("#2f2f2c", "--", "s"),
+    }
     fig, axs = plt.subplots(1, 3, figsize=(10, 3.4), dpi=200, sharey=True)
     for ax, who in zip(axs, ORDER):
-        for cond, (ls, mk) in cond_s.items():
+        for cond, (c, ls, mk) in cond_s.items():
             r = d[(d.model == who) & (d.condition == cond)].iloc[0]
-            c = WEAK_C if cond == "Honest" else COLOR[who]
             ax.plot(
                 [0, 1, 2],
                 [r.easy, r.medium, r.hard],
@@ -607,15 +611,14 @@ def fig_terciles(t: dict, out: Path) -> None:
             )
         ax.set_xticks([0, 1, 2])
         ax.set_xticklabels(["easy", "medium", "hard"])
-        ax.set_title(SUBJECT_NAMES[who], color=COLOR[who])
+        ax.set_title(SUBJECT_NAMES[who], color=INK)
         ax.set_ylim(0, 1)
         ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
         ax.grid(axis="x", visible=False)
     axs[0].set_ylabel("error rate")
     h = [
-        plt.Line2D([], [], color=WEAK_C, lw=2, marker="o", label="Honest"),
-        plt.Line2D([], [], color=INK2, lw=2, marker="o", label="Target 50%"),
-        plt.Line2D([], [], color=INK2, lw=2, ls="--", marker="s", label="Target 50% + checks named"),
+        plt.Line2D([], [], color=c, lw=2, ls=ls, marker=mk, label=cond)
+        for cond, (c, ls, mk) in cond_s.items()
     ]
     fig.legend(handles=h, loc="lower center", ncol=3, fontsize=8.5, bbox_to_anchor=(0.5, -0.12))
     fig.supxlabel(
